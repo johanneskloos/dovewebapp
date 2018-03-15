@@ -1,0 +1,16 @@
+(jbuild_version 1)
+
+(library (
+  (name doveadm)
+  (public_name doveadm)
+  (synopsis "OCaml interface to doveadm")
+  (libraries (unix))
+  (modules doveadm)
+  (wrapped false)
+))
+
+(executable (
+  (name doveadmTest)
+  (libraries (doveadm kaputt))
+  (modules doveadmTest)
+))
