@@ -4,7 +4,7 @@
   (name doveadm)
   (public_name doveadm)
   (synopsis "OCaml interface to doveadm")
-  (libraries (unix))
+  (libraries (unix str))
   (modules doveadm)
   (wrapped false)
 ))
