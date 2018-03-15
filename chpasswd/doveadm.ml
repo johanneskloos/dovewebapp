@@ -16,6 +16,18 @@ let password_encode ~user ~pass =
       | Error e -> Error (Format.sprintf "doveadm exited with %d, %s" status e)
   with e -> ignore (Unix.close_process_full (cout, cin, cerr)); raise e
 
-
+let dovecot_auth ~user ~pass =
+  let cmdline = Format.sprintf "doveadm auth test '%s'" user in
+  let cin = Unix.open_process_out cmdline in
+  try
+    output_string cin (pass ^ "\n");
+    flush cin;
+    match Unix.close_process_out cin with
+    | Unix.WEXITED 0 -> true
+    | Unix.WEXITED 77 -> false
+    | Unix.WEXITED s -> failwith (Format.sprintf "doveadm exited with %d" s)
+    | Unix.WSIGNALED s | Unix.WSTOPPED s ->
+      failwith (Format.sprintf "doveadm killed with signal %d" s)
+  with e -> ignore (Unix.close_process_out cin); raise e
 
 

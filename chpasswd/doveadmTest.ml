@@ -1,6 +1,5 @@
 open Kaputt
 
-
 let make_equal_result eqok eqfail prok prfail =
   Assertion.make_equal (fun r1 r2 -> match r1, r2 with
       | Ok o1, Ok o2 -> eqok o1 o2
@@ -16,6 +15,8 @@ let test_password_encode_1 =
        equal_string_result
 	 (Ok "{CRAM-MD5}6c872c7dd7cdf68f9392efce0ac212b1e361b8ce9acc5cf286a978b14755ec2d")
 	 (Doveadm.password_encode ~user:"foo" ~pass:"bar"))
+
+(* Tests for dovecot_auth are surprisingly difficult to set up, don't do it here. *)
 
 let () =
   Test.run_tests [
