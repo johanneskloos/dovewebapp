@@ -38,13 +38,8 @@ let password_encode ~user ~pass =
   else
     password_encode_impl ~user:(sanitize user) ~pass
 
-<<<<<<< HEAD
-let dovecot_auth_impl ~user ~pass =
-  let cmdline = Format.sprintf "doveadm auth test '%s'" user in
-=======
 let auth_impl ~user ~pass =
   let cmdline = Format.sprintf "doveadm auth test \"%s\"" user in
->>>>>>> e8daed5... Fixup
   let cin = Unix.open_process_out cmdline in
   try
     output_string cin (pass ^ "\n");
@@ -57,10 +52,11 @@ let auth_impl ~user ~pass =
       failwith (Format.sprintf "doveadm killed with signal %d" s)
   with e -> ignore (Unix.close_process_out cin); raise e
 
-let dovecot_auth ~user ~pass =
+let auth ~user ~pass =
   if is_bad pass then
+  if Str.string_match bad_pass pass 0 then
     failwith "Password contains bad characters"
   else if is_bad user then
     failwith "User name contains bad characters"
   else
-    dovecot_auth_impl ~user:(sanitize user) ~pass
+    auth_impl ~user:(sanitize user) ~pass
