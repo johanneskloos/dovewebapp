@@ -54,7 +54,6 @@ let auth_impl ~user ~pass =
 
 let auth ~user ~pass =
   if is_bad pass then
-  if Str.string_match bad_pass pass 0 then
     failwith "Password contains bad characters"
   else if is_bad user then
     failwith "User name contains bad characters"
