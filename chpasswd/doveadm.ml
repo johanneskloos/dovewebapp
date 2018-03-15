@@ -1,4 +1,4 @@
-let password_encode user pass =
+let password_encode ~user ~pass =
   let cmdline = Format.sprintf "doveadm pw -u '%s'" user in
   let (cout, cin, cerr) = Unix.open_process_full cmdline [| |] in
   try

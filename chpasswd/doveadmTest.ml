@@ -15,7 +15,7 @@ let test_password_encode_1 =
     (fun () ->
        equal_string_result
 	 (Ok "{CRAM-MD5}6c872c7dd7cdf68f9392efce0ac212b1e361b8ce9acc5cf286a978b14755ec2d")
-	 (Doveadm.password_encode "foo" "bar"))
+	 (Doveadm.password_encode ~user:"foo" ~pass:"bar"))
 
 let () =
   Test.run_tests [
