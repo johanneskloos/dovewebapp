@@ -105,7 +105,7 @@ let format_users users =
       ("token", match user_token, user_expires with
 	| Some token, Some timeout ->
 	  Tobj [("token", Tstr token);
-		("expires", Tstr ("TBD"))]
+		("expires", Tstr (Time.format_timeout timeout))]
 	| None, None -> Tnull
 	| _, _ -> Tobj ["message", Tstr "inconsistent token state"])
     ]
