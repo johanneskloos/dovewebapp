@@ -1,0 +1,69 @@
+Follow a MVC architecture
+
+Model
+=====
+
+User database, with a user table of the following form:
+
+user name - primary database key
+password, encoded as a hash (null means "no password set", for new accounts)
+login token for password reset (null means no outstanding password reset)
+expiry time of login token
+alternative email address (null means use primary address)
+admin flag
+
+Logged-in user table:
+
+Login identifier
+Session timeout
+User name
+Admin flag
+
+Operations on the model:
++ Set password
++ Create reset token
++ Control admin mode
++ List users
++ Create user without password
++ Create user with password
++ Delete login token
++ Authenticate
++ Delete user
+
+Controller and view
+===================
+
+Page structure:
+
+Front page - Login with forgot password and login buttons
+Logged-in page - Change password form;
+  if admin mode and not logged in with a token,
+  add create user form and user list with modification controls.
+  Buttons: Change my password, Create user, Update user list, Log out
+Reset information page - Static information about reset.
+
+URLs: index.html - front page; admin - logged-in page;
+  forgot - landing for forgotten passwords, reset.html - reset information
+
+Login - login:
+  Calls authenticate, adds results to logged-in user table if successful.
+  To admin page.
+Login - forgot password:
+  Creates a reset token and sends it to the alternative email address.
+  To reset information page.
+Admin - change my password:
+  Set password
+  To admin page.
+Admin - create user:
+  Create user without/with password (depending on what's given).
+  In the former case, if no alternative email address is given, display
+  the token formatted as a link.
+  To admin page.
+Admin - update user list:
+  Perform updates (set password, create reset token, delete reset token,
+    control admin, delete user) as required.
+  To admin page.
+Admin - logout:
+  Remove from logged-in user table.
+  To login page.
+
