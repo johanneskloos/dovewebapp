@@ -134,3 +134,9 @@ let view_admin db auth msgs =
   | Admin -> view_admin_admin db auth.auth_user msgs
 	       (Model.user_list db auth)
 
+let view_forgot_form db ~user ~token pw_mismatch =
+  Template.from_file ~models:([
+      ("user", Jg_types.Tstr user);
+      ("token", Jg_types.Tstr token);
+      ("pw_mismatch", Jg_types.Tbool pw_mismatch)
+    ]) "forgot.html"

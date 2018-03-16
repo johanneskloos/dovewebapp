@@ -21,3 +21,5 @@ type admin_messages =
   | FDeleteNotConfirmed of string
   | FPasswordMismatch
 val view_admin: Model.db -> Model.authdata -> admin_messages list -> string
+
+val view_forgot_form: Model.db -> user:string -> token:string -> bool -> string

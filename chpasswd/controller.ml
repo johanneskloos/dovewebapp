@@ -40,6 +40,14 @@ let event_admin_change_password db session pass pass2 =
     view_admin db session [SUpdPassword session.auth_user]
   end
 
+let event_admin_change_password_forgot db token session pass pass2 =
+  if pass <> pass2 then
+    view_forgot_form db ~user:session.Model.auth_user ~token true
+  else begin
+    Model.user_update_password db session ~user:session.auth_user ~pass;
+    view_admin db session [SUpdPassword session.auth_user]
+  end
+
 let event_admin_change_email db session mail =
   let mail = if mail = "" then None else Some mail in
   Model.user_update_alternative_email db session ~user:session.auth_user ~mail;
@@ -99,3 +107,17 @@ let event_admin db (cgi: Netcgi.cgi) =
       event_admin_mass_update db session cgi
     | _ ->
       view_admin db session []
+
+let event_forgot db (cgi: Netcgi.cgi) =
+  let user = cgi#argument_value "user"
+  and token = cgi#argument_value "token" in
+  if cgi#argument_exists "pass" then
+    match Model.session_from_token db ~user ~token with
+    | Some auth ->
+      event_admin_change_password_forgot db token auth
+	(cgi#argument_value "pass")
+	(cgi#argument_value "pass2")
+    | None ->
+      view_login db LoginFailed
+  else
+    view_forgot_form db ~user ~token false
