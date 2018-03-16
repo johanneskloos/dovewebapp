@@ -4,7 +4,7 @@
   (name doveadm)
   (public_name doveadm)
   (synopsis "OCaml interface to doveadm")
-  (libraries (unix str))
+  (libraries (unix))
   (modules doveadm)
   (wrapped false)
 ))
@@ -13,4 +13,11 @@
   (name doveadmTest)
   (libraries (doveadm kaputt))
   (modules doveadmTest)
+))
+
+(library (
+  (name webapp)
+  (libraries (doveadm sqlite3 cryptokit netcgi2 jingoo calendar))
+  (modules (database model token config view mails controller template))
+  (wrapped false)
 ))
