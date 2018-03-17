@@ -1,6 +1,5 @@
 type login_messages = TokenSent of string | LoginFailed | NoMessage
-val view_login: Model.db -> login_messages -> string
-  
+
 type admin_messages =
     SUpdPassword of string
   | SUpdEMail of { user: string; mail: string option }
@@ -20,6 +19,9 @@ type admin_messages =
   | FDeleteCurrent
   | FDeleteNotConfirmed of string
   | FPasswordMismatch
-val view_admin: Model.db -> Model.authdata -> admin_messages list -> string
 
-val view_forgot_form: Model.db -> user:string -> token:string -> bool -> string
+module Make(ModelImpl: Model.S): sig
+  val view_login: ModelImpl.db -> login_messages -> string
+  val view_admin: ModelImpl.db -> Model.authdata -> admin_messages list -> string
+  val view_forgot_form: ModelImpl.db -> user:string -> token:string -> bool -> string
+end

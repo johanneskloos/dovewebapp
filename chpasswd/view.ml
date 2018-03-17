@@ -1,15 +1,4 @@
 type login_messages = TokenSent of string | LoginFailed | NoMessage
-let view_login db msg =
-  let msg_text = match msg with
-    | NoMessage -> ""
-    | LoginFailed -> "<span class=\"failure\">Login failed!</span>"
-    | TokenSent user ->
-      "<span class=\"info\">Password reset token sent to " ^ user ^ ".</span>"
-  in
-  Template.from_file ~models:[
-    ("message", Jg_types.Tstr msg_text)
-  ] "login.html"
-
 type admin_messages =
     SUpdPassword of string
   | SUpdEMail of { user: string; mail: string option }
@@ -111,32 +100,46 @@ let format_users users =
     ]
   in [("users", Tlist (List.map format_user users))]
 
-let view_admin_user db user msgs =
-  Template.from_file ~models:([
-      ("user", Jg_types.Tstr user);
-      ("alt_email", match Model.user_get_email db user with
-	| Some addr -> Jg_types.Tstr addr
-	| None -> Jg_types.Tnull)
-    ] @ format_messages msgs) "admin_user.html"
+module Make(ModelImpl: Model.S) = struct
+  let view_login db msg =
+    let msg_text = match msg with
+      | NoMessage -> ""
+      | LoginFailed -> "<span class=\"failure\">Login failed!</span>"
+      | TokenSent user ->
+	"<span class=\"info\">Password reset token sent to " ^ user ^ ".</span>"
+    in
+    Template.from_file ~models:[
+      ("message", Jg_types.Tstr msg_text)
+    ] "login.html"
 
-let view_admin_admin db user msgs users =
-  Template.from_file ~models:([
-      ("user", Jg_types.Tstr user);
-      ("alt_email", match Model.user_get_email db user with
-	| Some addr -> Jg_types.Tstr addr
-	| None -> Jg_types.Tstr "")
-    ] @ format_messages msgs @ format_users users) "admin_admin.html"
+  let view_admin_user db user msgs =
+    Template.from_file ~models:([
+	("user", Jg_types.Tstr user);
+	("alt_email", match ModelImpl.user_get_email db user with
+	  | Some addr -> Jg_types.Tstr addr
+	  | None -> Jg_types.Tnull)
+      ] @ format_messages msgs) "admin_user.html"
 
-let view_admin db auth msgs =
-  let open Model in
-  match auth.auth_level with
-  | User -> view_admin_user db auth.auth_user msgs
-  | Admin -> view_admin_admin db auth.auth_user msgs
-	       (Model.user_list db auth)
+  let view_admin_admin db user msgs users =
+    Template.from_file ~models:([
+	("user", Jg_types.Tstr user);
+	("alt_email", match ModelImpl.user_get_email db user with
+	  | Some addr -> Jg_types.Tstr addr
+	  | None -> Jg_types.Tstr "")
+      ] @ format_messages msgs @ format_users users) "admin_admin.html"
 
-let view_forgot_form db ~user ~token pw_mismatch =
-  Template.from_file ~models:([
-      ("user", Jg_types.Tstr user);
-      ("token", Jg_types.Tstr token);
-      ("pw_mismatch", Jg_types.Tbool pw_mismatch)
-    ]) "forgot.html"
+  let view_admin db auth msgs =
+    let open Model in
+    match auth.auth_level with
+    | User -> view_admin_user db auth.auth_user msgs
+    | Admin -> view_admin_admin db auth.auth_user msgs
+		 (ModelImpl.user_list db auth)
+
+  let view_forgot_form db ~user ~token pw_mismatch =
+    Template.from_file ~models:([
+	("user", Jg_types.Tstr user);
+	("token", Jg_types.Tstr token);
+	("pw_mismatch", Jg_types.Tbool pw_mismatch)
+      ]) "forgot.html"
+end
+
