@@ -1,0 +1,22 @@
+<html>
+  <head><title>Login - Mail server administration</title></head>
+  <body>
+    <form action="/pwmanager" method="post">
+      <p>
+      User name:<br/>
+      <input type="text" name="user"/>
+      </p>
+      <p>
+      Password:<br/>
+      <input type="password" name="pass"/>
+      </p>
+      <input type="hidden" value="login"/>
+      <button type=submit name="op" value="login">
+	Log in
+      </button>
+      <button type=submit name="op" value="forgot">
+	Forgot password
+      </button>
+    </form>
+  </body>
+</html>
