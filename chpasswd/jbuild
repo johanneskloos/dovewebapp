@@ -2,7 +2,6 @@
 
 (library (
   (name doveadm)
-  (public_name doveadm)
   (synopsis "OCaml interface to doveadm")
   (libraries (unix))
   (modules doveadm)
