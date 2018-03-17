@@ -39,6 +39,11 @@ let validate_pass str =
   else
     raise InvalidPass
 
+let validate_pass_opt str =
+  match str with
+  | Some str -> Some (validate_pass str)
+  | None -> None
+
 exception InvalidAddress of string
 let validate_email str =
   match Netaddress.parse str with
@@ -121,18 +126,19 @@ struct
     end
 
   let event_admin_create db view session user pass altemail level =
-    if pass = "" then
+    match pass with
+    | None ->
       let token = ModelImpl.user_create_nopw db session ~user ~altemail ~level
-      in match altemail with
+      in begin match altemail with
       | Some mail ->
 	Mails.send_account_email mail token;
 	view_admin db view session [SCreatedUserSentToken { user; mail; level }]
       | None ->
 	view_admin db view session [SCreatedUserWithToken { user; token; level }]
-    else begin
+      end
+    | Some pass  ->
       ModelImpl.user_create_pw db session ~user ~pass ~altemail ~level;
       view_admin db view session [SCreatedUser { user; level }]
-    end
 
   let event_admin_mass_update db view session tasks =
     let tokens = ModelImpl.user_task_run db session tasks
@@ -167,7 +173,7 @@ struct
       | Create ->
 	event_admin_create db cgi session
 	  (validate_user (get_admin_create_user cgi))
-	  (validate_pass (get_admin_create_pass cgi))
+	  (validate_pass_opt (get_admin_create_pass cgi))
 	  (validate_email_option (get_admin_create_mail cgi))
 	  (get_admin_create_level cgi)
       | MassUpdate ->

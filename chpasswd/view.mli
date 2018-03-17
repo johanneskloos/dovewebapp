@@ -37,7 +37,7 @@ module type S = sig
   val get_admin_chmail_mail: view -> string option
   val get_admin_delete_confirm: view -> bool
   val get_admin_create_user: view -> string
-  val get_admin_create_pass: view -> string
+  val get_admin_create_pass: view -> string option
   val get_admin_create_mail: view -> string option
   val get_admin_create_level: view -> Model.level
   val get_admin_mass_update: view -> Model.task list
