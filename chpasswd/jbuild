@@ -17,6 +17,6 @@
 (library (
   (name webapp)
   (libraries (doveadm sqlite3 cryptokit netcgi2 jingoo calendar))
-  (modules (database model token config view mails controller template time modelDatabase))
+  (modules (database model token config view mails controller template time modelDatabase modelMock))
   (wrapped false)
 ))
