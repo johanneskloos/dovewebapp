@@ -106,28 +106,28 @@ let event_admin_change_password db session pass pass2 =
   if pass <> pass2 then
     view_admin db session [FPasswordMismatch]
   else begin
-    Model.user_update_password db session ~user:session.auth_user ~pass;
-    view_admin db session [SUpdPassword session.auth_user]
+    Model.(user_update_password db session ~user:session.auth_user ~pass);
+    view_admin db session [SUpdPassword session.Model.auth_user]
   end
 
 let event_admin_change_password_forgot db token session pass pass2 =
   if pass <> pass2 then
     view_forgot_form db ~user:session.Model.auth_user ~token true
   else begin
-    Model.user_update_password db session ~user:session.auth_user ~pass;
-    view_admin db session [SUpdPassword session.auth_user]
+    Model.(user_update_password db session ~user:session.auth_user ~pass);
+    view_admin db session [SUpdPassword session.Model.auth_user]
   end
 
 let event_admin_change_email db session mail =
   let mail = if mail = "" then None else Some mail in
-  Model.user_update_alternative_email db session ~user:session.auth_user ~mail;
-  view_admin db session [SUpdEMail { user = session.auth_user; mail }]
+  Model.(user_update_alternative_email db session ~user:session.auth_user ~mail);
+  view_admin db session [SUpdEMail { user = session.Model.auth_user; mail }]
 
 let event_admin_delete db session confirm =
   if not confirm then
     view_admin db session [FDeleteNotConfirmed session.Model.auth_user]
   else begin
-    Model.user_delete db session session.auth_user;
+    Model.(user_delete db session session.auth_user);
     event_admin_logout db session
   end
 
