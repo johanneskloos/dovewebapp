@@ -1,0 +1,9 @@
+Dear user,
+
+You indicated that you have forgotten your password. To reset it,
+please follow the this link:
+
+  https://mail.waitpermission.de/pwmanager?page=forgot&token={{token}}
+
+Best regards,
+your admin team.

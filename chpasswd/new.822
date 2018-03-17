@@ -1,0 +1,9 @@
+Dear user,
+
+Your account has been created. To set an initial password,
+please follow the this link:
+
+  https://mail.waitpermission.de/pwmanager?page=forgot&token={{token}}
+
+Best regards,
+your admin team.
