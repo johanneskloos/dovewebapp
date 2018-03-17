@@ -80,10 +80,163 @@ let format_users users =
     ]
   in [("users", Tlist (List.map format_user users))]
 
-module Make(ModelImpl: Model.S) = struct
-  type model = ModelImpl.db
+type page_status = StatOk | StatAuth | StatError
 
-  let view_login db msg =
+module type Strategy = sig
+  type view
+  val get_named_argument_opt: view -> string -> string option
+  val enumerate_arguments: view -> string list
+
+  val get_session_data: view -> string option
+  val set_session_data: view -> string -> unit
+
+  val output_page: view -> page_status -> string -> unit
+end
+
+module CGIStrategy = struct
+  type view = { cgi: Netcgi.cgi; mutable set_session: string option }
+
+  let get_named_argument_opt view field =
+    try Some ((view.cgi # argument field) # value)
+    with Not_found -> None
+  let enumerate_arguments view =
+    List.map (fun arg -> arg # name) (view.cgi # arguments)
+
+  let get_session_data view =
+    try Some (view.cgi # environment # cookie "session"
+	      |> Netcgi.Cookie.value)
+    with Not_found -> None
+
+  let set_session_data view token = view.set_session <- Some token
+  let output_page view status body =
+    let cookies = match view.set_session with
+      | Some token -> [Netcgi.Cookie.make "sesion" token]
+      | None -> []
+    and status = match status with
+      | StatOk -> `Ok
+      | StatAuth -> `Unauthorized
+      | StatError -> `Internal_server_error
+    in
+    view.set_session <- None;
+    view.cgi # set_header ~set_cookies:cookies ~status ();
+    view.cgi # out_channel # output_string body;
+    view.cgi # out_channel # flush ();
+    view.cgi # finalize ()
+
+end
+
+exception UnknownOperation of string
+
+module Make(ModelImpl: Model.S)(Strat: Strategy):
+  View.S with type model = ModelImpl.db and  type view = Strat.view =
+struct
+  open Controller
+  open Strat
+  type model = ModelImpl.db
+  type view = Strat.view
+
+  let get_named_argument view field =
+    match get_named_argument_opt view field with
+    | Some data -> data
+    | None -> raise (ArgumentMissing field)
+
+  let get_bool view field =
+    get_named_argument_opt view field <> None
+
+  let get_level view field = 
+    match get_named_argument_opt view field with
+    | None -> Model.User
+    | Some _ -> Model.Admin
+
+  let get_login_operation view =
+    match get_named_argument_opt view "operation" with
+    | Some "login" -> Login
+    | Some "forgot" -> Forgot
+    | None -> NoOperation
+    | Some op -> raise (UnknownOperation op)
+
+  let get_admin_operation view =
+    match get_named_argument_opt view "operation" with
+    | Some "logout" -> Logout
+    | Some "set_pass" -> SetPass
+    | Some "set_mail" -> SetMail
+    | Some "delete" -> Delete
+    | Some "create" -> Create
+    | Some "mass_update" -> MassUpdate
+    | None -> NoOperation
+    | Some op -> raise (UnknownOperation op)
+
+  let get_named_argument_nullopt view field =
+    match get_named_argument_opt view field with
+    | None | Some "" -> None
+    | Some value -> Some value
+
+  let get_login_user view = get_named_argument view "user"
+  let get_login_pass view = get_named_argument view "pass"
+  let get_admin_chpass_pass1 view = get_named_argument view "pass1"
+  let get_admin_chpass_pass2 view = get_named_argument view "pass2"
+  let get_admin_chmail_mail view = get_named_argument_nullopt view "mail"
+  let get_admin_delete_confirm view = get_bool view "confirm"
+  let get_admin_create_user view = get_named_argument view "user"
+  let get_admin_create_pass view = get_named_argument_nullopt view "pass"
+  let get_admin_create_mail view = get_named_argument_nullopt view "mail"
+  let get_admin_create_level view = get_level view "level"
+  let get_forgot_user view = get_named_argument view "user"
+  let get_forgot_token view = get_named_argument view "token"
+  let get_forgot_pass1 view = get_named_argument_opt view "pass1"
+  let get_forgot_pass2 view = get_named_argument_opt view "pass2"
+
+  let get_admin_sessionid view =
+    match get_session_data view with
+    | Some session -> session
+    | None -> raise Not_found
+
+  let rec filter_map (f: 'a -> 'b option) = function
+    | [] -> []
+    | x::l -> match f x with
+      | Some y -> y :: filter_map f l
+      | None -> filter_map f l
+
+  let get_starts_with prefix str =
+    let plen = String.length prefix
+    and slen = String.length str in
+    if String.sub str 0 plen = prefix then
+      Some (String.sub str plen (slen - plen))
+    else
+      None
+
+  let get_name_field = get_starts_with "user:"
+
+  let get_actions view user =
+    let token_mk = get_bool view ("mktok:" ^ user)
+    and token_rm = get_bool view ("rmtok:" ^ user)
+    and mail_old = get_named_argument_nullopt view ("omail:" ^ user)
+    and mail_new = get_named_argument_nullopt view ("nmail:" ^ user)
+    and pass_new = get_named_argument_nullopt view ("pass:" ^ user)
+    and level_old = get_level view ("olevel:" ^ user)
+    and level_new = get_level view ("nlevel:" ^ user)
+    and delete = get_bool view ("delete:" ^ user) in
+    let open Model in
+    if delete then [TaskDelete user] else
+      (if token_mk then [TaskCreateToken user]
+       else if token_rm then [TaskDeleteToken user]
+       else []) @
+      (if mail_old <> mail_new
+       then [TaskSetEMail {user; mail = mail_new}]
+       else []) @
+      (if level_old <> level_new
+       then [TaskSetAdmin {user; level = level_new}]
+       else []) @
+      (match pass_new with
+       | Some pass -> [TaskSetPassword {user; pass}]
+       | None -> [])
+
+  let get_admin_mass_update view =
+    let users = filter_map get_name_field
+	(enumerate_arguments view)
+    in List.map (get_actions view) users |> List.flatten
+
+  let format_login db msg =
     let msg_text = match msg with
       | NoMessage -> ""
       | LoginFailed -> "<span class=\"failure\">Login failed!</span>"
@@ -94,7 +247,7 @@ module Make(ModelImpl: Model.S) = struct
       ("message", Jg_types.Tstr msg_text)
     ] "login.html"
 
-  let view_admin_user db user msgs =
+  let format_admin_user db user msgs =
     Template.from_file ~models:([
 	("user", Jg_types.Tstr user);
 	("alt_email", match ModelImpl.user_get_email db user with
@@ -102,7 +255,7 @@ module Make(ModelImpl: Model.S) = struct
 	  | None -> Jg_types.Tnull)
       ] @ format_messages msgs) "admin_user.html"
 
-  let view_admin_admin db user msgs users =
+  let format_admin_admin db user msgs users =
     Template.from_file ~models:([
 	("user", Jg_types.Tstr user);
 	("alt_email", match ModelImpl.user_get_email db user with
@@ -110,18 +263,36 @@ module Make(ModelImpl: Model.S) = struct
 	  | None -> Jg_types.Tstr "")
       ] @ format_messages msgs @ format_users users) "admin_admin.html"
 
-  let view_admin db auth msgs =
+  let format_admin db auth msgs =
     let open Model in
     match auth.auth_level with
-    | User -> view_admin_user db auth.auth_user msgs
-    | Admin -> view_admin_admin db auth.auth_user msgs
+    | User -> format_admin_user db auth.auth_user msgs
+    | Admin -> format_admin_admin db auth.auth_user msgs
 		 (ModelImpl.user_list db auth)
 
-  let view_forgot_form db ~user ~token pw_mismatch =
+  let format_forgot_form db ~user ~token pw_mismatch =
     Template.from_file ~models:([
 	("user", Jg_types.Tstr user);
 	("token", Jg_types.Tstr token);
 	("pw_mismatch", Jg_types.Tbool pw_mismatch)
       ]) "forgot.html"
+
+  let view_open_session = set_session_data
+  let view_close_session view = set_session_data view ""
+
+  let do_output view cont =
+    try output_page view StatOk (cont ())
+    with e ->
+      let errmsg = Printexc.to_string e in
+      output_page view StatError errmsg
+
+  let view_login model view msg =
+    do_output view (fun () -> format_login model msg)
+  let view_admin model view session msgs =
+    do_output view (fun () -> format_admin model session msgs)
+  let view_forgot_form model view ~user ~token mismatch =
+    do_output view (fun () -> format_forgot_form model ~user ~token mismatch)
 end
+
+module MakeCGI(ModelImpl: Model.S) = Make(ModelImpl)(CGIStrategy)
 
