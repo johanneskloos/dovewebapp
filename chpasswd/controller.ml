@@ -75,13 +75,12 @@ let get_admin (cgi: Netcgi.cgi) field =
 
 let event_login_login db user pass (cgi: Netcgi.cgi) =
   match Model.session_login db ~user ~pass with
-  | None -> view_login db LoginFailed
+  | None -> ([], view_login db LoginFailed)
   | Some sessionid ->
     match Model.session_retrieve db sessionid with
     | Some session ->
-      cgi # set_header ~set_cookies:[Netcgi.Cookie.make cookie_name sessionid] ();
-      view_admin db session []
-    | None -> view_login db LoginFailed
+      ([Netcgi.Cookie.make cookie_name sessionid], view_admin db session [])
+    | None -> ([], view_login db LoginFailed)
 
 let event_login_forgot db user =
   let token = Model.user_create_token db user in
@@ -96,8 +95,8 @@ let event_login db (cgi: Netcgi.cgi) =
       (get_pass cgi "pass")
       cgi
   | "forgot" ->
-    event_login_forgot db (cgi#argument_value "user")
-  | _ -> raise Not_found
+    ([], event_login_forgot db (get_user cgi "user"))
+  | _ -> ([], view_login db NoMessage)
 
 let event_admin_logout db session =
   Model.session_logout db session;
