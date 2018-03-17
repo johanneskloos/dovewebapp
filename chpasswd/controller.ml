@@ -73,9 +73,10 @@ let get_admin (cgi: Netcgi.cgi) field =
   let open Model in
   if cgi # argument_exists field then Admin else User
 
-module Make(ModelImpl: Model.S) = struct
-  module View = View.Make(ModelImpl)
-  open View
+module Make
+    (ModelImpl: Model.S)(ViewImpl: View.S with type model = ModelImpl.db) =
+struct
+  open ViewImpl
   open Model
 
   let event_login_login db user pass (cgi: Netcgi.cgi) =

@@ -20,8 +20,9 @@ type admin_messages =
   | FDeleteNotConfirmed of string
   | FPasswordMismatch
 
-module Make(ModelImpl: Model.S): sig
-  val view_login: ModelImpl.db -> login_messages -> string
-  val view_admin: ModelImpl.db -> Model.authdata -> admin_messages list -> string
-  val view_forgot_form: ModelImpl.db -> user:string -> token:string -> bool -> string
+module type S = sig
+  type model
+  val view_login: model -> login_messages -> string
+  val view_admin: model -> Model.authdata -> admin_messages list -> string
+  val view_forgot_form: model -> user:string -> token:string -> bool -> string
 end

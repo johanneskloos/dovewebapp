@@ -16,7 +16,8 @@ val get_nonempty_string : Netcgi.cgi -> string -> string
 val get_mail_option : Netcgi.cgi -> string -> string option
 val get_pass : Netcgi.cgi -> string -> string
 val get_admin : Netcgi.cgi -> string -> Model.level
-module Make(ModelImpl: Model.S): sig
+module Make(ModelImpl: Model.S)
+    (ViewImpl: View.S with type model = ModelImpl.db): sig
   val event_login_login :
     ModelImpl.db -> string -> string -> Netcgi.cgi -> Netcgi.Cookie.t list * string
   val event_login_forgot : ModelImpl.db -> string -> string
