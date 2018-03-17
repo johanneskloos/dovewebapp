@@ -82,10 +82,11 @@ let event_login_login db user pass (cgi: Netcgi.cgi) =
       ([Netcgi.Cookie.make cookie_name sessionid], view_admin db session [])
     | None -> ([], view_login db LoginFailed)
 
-let event_login_forgot db user =
-  let token = Model.user_create_token db user in
-  Mails.send_token_email db ~user ~token;
-  view_login db (TokenSent user)
+  let event_login_forgot db user =
+    let token = ModelImpl.user_create_token db user
+    and email = ModelImpl.user_get_email db user in
+    Mails.send_token_email ~email ~user ~token;
+    view_login db (TokenSent user)
 
 let event_login db (cgi: Netcgi.cgi) =
   match cgi#argument_value "op" with
