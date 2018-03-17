@@ -189,3 +189,32 @@ let event_forgot db (cgi: Netcgi.cgi) =
       view_login db LoginFailed
   else
     view_forgot_form db ~user ~token false
+
+let db_cached = ref None
+
+let handle_request (cgi: Netcgi.cgi) =
+  let db = match !db_cached with
+    | Some db -> db
+    | None ->
+      let db = Database.connect !Config.database in
+      db_cached := Some db; db
+  in try
+    let (cookies, page) = match cgi#argument_value "page" with
+      | "admin" -> ([], event_admin db cgi)
+      | "forgot" -> ([], event_forgot db cgi)
+      | _ -> event_login db cgi
+    in cgi # set_header
+      ~status:`Ok 
+      ~content_type:"text/html"
+      ~content_length:(String.length page)
+      ~set_cookies:cookies
+      ~cache:`No_cache ();
+    cgi # out_channel # output_string page;
+    cgi # out_channel # commit_work ()
+  with e ->
+    cgi # set_header
+      ~status:`Internal_server_error
+      ~content_type:"text/plain"
+      ~cache:`No_cache ();
+    cgi # out_channel # output_string (Printexc.to_string e);
+    cgi # out_channel # commit_work ()
