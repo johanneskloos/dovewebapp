@@ -25,7 +25,8 @@ let is_bad str =
 let sanitize str =
   let buf = Buffer.create (String.length str) in
   String.iter (function
-      | '"' -> Buffer.add_string buf "\\'"
+      | ('$' | '`' | '\\' | '"') as c ->
+	Buffer.add_char buf '\\'; Buffer.add_char buf c
       | c -> Buffer.add_char buf c)
     str;
   Buffer.contents buf
