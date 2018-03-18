@@ -55,134 +55,145 @@ let sql_expire_tokens =
 let sql_get_email =
   "SELECT alternative_email FROM users WHERE username = ?"
 
-let session_login db ~user ~pass =
-  if Doveadm.auth ~user ~pass then
-    let token = Token.generate () in
-    execute_update db sql_insert_session [str token; str user];
-    Some token
-  else
-    None
+module type Externals = sig
+  val auth: user:string -> pass:string -> bool
+  val password_encode: user:string -> pass:string -> (string, string) result
+  val generate_token: unit -> string
+end
 
-let session_logout db session =
-  match session.auth_session with
-  | Some sessionid ->
-    execute_update db sql_delete_session [str sessionid]
-  | None -> ()
+module Make(E: Externals) = struct
+  type db = Database.db
 
-let session_retrieve db sessionid =
-  execute_select_at_most_one db sql_retrieve_authorization [str sessionid]
-    (fun stmt ->
-       let user = get_str stmt 1
-       and admin = get_bool stmt 2
-       in { auth_session = Some sessionid;
-	    auth_user = user;
-	    auth_level = if admin then Admin else User })
+  let session_login db ~user ~pass =
+    if E.auth ~user ~pass then
+      let token = E.generate_token () in
+      execute_update db sql_insert_session
+	[str token; str user];
+      Some token
+    else
+      None
 
-let session_from_token db ~user ~token =
-  execute_select_at_most_one db sql_check_token [str user; str token]
-    (fun _ ->
-       { auth_session = None; auth_user = user; auth_level = User })
+  let session_logout db session =
+    match session.auth_session with
+    | Some sessionid ->
+      execute_update db sql_delete_session [str sessionid]
+    | None -> ()
 
-let user_update_password db session ~user ~pass =
-  need_same_user session user;
-  match Doveadm.password_encode ~user ~pass with
-  | Ok hash -> execute_update db sql_set_password [str hash; str user]
-  | Error msg -> raise (ExternalFailure msg)
+  let session_retrieve db sessionid =
+    execute_select_at_most_one db sql_retrieve_authorization
+      [str sessionid]
+      (fun stmt ->
+	 let user = get_str stmt 1
+	 and admin = get_bool stmt 2
+	 in { auth_session = Some sessionid;
+	      auth_user = user;
+	      auth_level = if admin then Admin else User })
 
-let user_update_alternative_email db session ~user ~mail =
-  need_same_user session user;
-  execute_update db sql_set_alternative_email [stropt mail; str user]
+  let session_from_token db ~user ~token =
+    execute_select_at_most_one db sql_check_token [str user; str token]
+      (fun _ ->
+	 { auth_session = None; auth_user = user; auth_level = User })
 
-let user_delete db session user =
-  need_same_user session user;
-  execute_update db sql_delete_user [str user]
+  let user_update_password db session ~user ~pass =
+    need_same_user session user;
+    match E.password_encode ~user ~pass with
+    | Ok hash -> execute_update db sql_set_password [str hash; str user]
+    | Error msg -> raise (ExternalFailure msg)
 
-let user_create_token db user =
-  transaction_bracket db @@
-  fun db ->
-  match execute_select_at_most_one db sql_retrieve_token [str user]
-	  (fun stmt -> get_str stmt 1)
-  with
-  | Some token -> token
-  | None ->
-    let token = Token.generate () in
-    execute_update db sql_set_token [str token; str user];
+  let user_update_alternative_email db session ~user ~mail =
+    need_same_user session user;
+    execute_update db sql_set_alternative_email [stropt mail; str user]
+
+  let user_delete db session user =
+    need_same_user session user;
+    execute_update db sql_delete_user [str user]
+
+  let user_create_token db user =
+    transaction_bracket db @@
+    fun db ->
+    match execute_select_at_most_one db sql_retrieve_token [str user]
+	    (fun stmt -> get_str stmt 1)
+    with
+    | Some token -> token
+    | None ->
+      let token = E.generate_token () in
+      execute_update db sql_set_token [str token; str user];
+      token
+
+  let user_update_admin db session ~user ~level =
+    need_admin session;
+    let is_admin = match level with User -> false | Admin -> true in
+    execute_update db sql_set_admin [bool is_admin; str user]
+
+  let user_delete_token db session user =
+    need_admin session;
+    execute_update db sql_delete_token [str user]
+
+  let user_create_nopw db session ~user ~altemail ~level =
+    need_admin session;
+    let is_admin = match level with User -> false | Admin -> true
+    and token = E.generate_token () in
+    execute_update db sql_insert_user_token
+      [str user; str token; stropt altemail; bool is_admin];
     token
 
-let user_update_admin db session ~user ~level =
-  need_admin session;
-  let is_admin = match level with User -> false | Admin -> true in
-  execute_update db sql_set_admin [bool is_admin; str user]
+  let user_create_pw db session ~user ~pass ~altemail ~level =
+    need_admin session;
+    let is_admin = match level with User -> false | Admin -> true
+    and pass = match E.password_encode ~user ~pass with
+      | Ok hash -> hash
+      | Error msg -> raise (ExternalFailure msg)
+    in execute_update db sql_insert_user_password
+      [str user; str pass; stropt altemail; bool is_admin]
 
-let user_delete_token db session user =
-  need_admin session;
-  execute_update db sql_delete_token [str user]
+  let option_map f = function Some x -> Some (f x) | None -> None
 
-let user_create_nopw db session ~user ~altemail ~level =
-  need_admin session;
-  let is_admin = match level with User -> false | Admin -> true
-  and token = Token.generate () in
-  execute_update db sql_insert_user_token
-    [str user; str token; stropt altemail; bool is_admin];
-  token
+  let user_list db session =
+    need_admin session;
+    let user_collect stmt users =
+      let user_name = get_str stmt 1
+      and user_token = get_stropt stmt 2
+      and user_expires = option_map Int64.to_float (get_int64opt stmt 3)
+      and user_alt_email = get_stropt stmt 4
+      and user_level = if get_bool stmt 4 then Admin else User in
+      { user_name; user_token; user_expires; user_alt_email;
+	user_level } :: users in
+    execute_select db sql_list_users [] user_collect [] |> List.rev
 
-let user_create_pw db session ~user ~pass ~altemail ~level =
-  need_admin session;
-  let is_admin = match level with User -> false | Admin -> true
-  and pass = match Doveadm.password_encode ~user ~pass with
-    | Ok hash -> hash
-    | Error msg -> raise (ExternalFailure msg)
-  in execute_update db sql_insert_user_password
-    [str user; str pass; stropt altemail; bool is_admin]
+  let expire db =
+    execute_update db sql_expire_sessions [];
+    execute_update db sql_expire_tokens []
 
-let option_map f = function Some x -> Some (f x) | None -> None
+  let user_task_run db session tasks =
+    need_admin session;
+    transaction_bracket db @@
+    fun db ->
+    List.fold_left (fun tokens ->
+	function
+	| TaskSetPassword { user; pass } ->
+	  user_update_password db session ~user ~pass;
+	  tokens
+	| TaskSetEMail { user; mail } ->
+	  user_update_alternative_email db session ~user ~mail;
+	  tokens
+	| TaskCreateToken user ->
+	  { user; token = user_create_token db user } :: tokens
+	| TaskDeleteToken user ->
+	  user_delete_token db session user;
+	  tokens
+	| TaskSetAdmin { user; level } ->
+	  user_update_admin db session user level;
+	  tokens
+	| TaskDelete user ->
+	  user_delete db session user;
+	  tokens)
+      [] tasks
 
-let user_list db session =
-  need_admin session;
-  let user_collect stmt users =
-    let user_name = get_str stmt 1
-    and user_token = get_stropt stmt 2
-    and user_expires = option_map Int64.to_float (get_int64opt stmt 3)
-    and user_alt_email = get_stropt stmt 4
-    and user_level = if get_bool stmt 4 then Admin else User in
-    { user_name; user_token; user_expires; user_alt_email;
-      user_level } :: users in
-  execute_select db sql_list_users [] user_collect [] |> List.rev
-
-let expire db =
-  execute_update db sql_expire_sessions [];
-  execute_update db sql_expire_tokens []
-
-let user_task_run db session tasks =
-  need_admin session;
-  transaction_bracket db @@
-  fun db ->
-  List.fold_left (fun tokens ->
-      function
-      | TaskSetPassword { user; pass } ->
-	user_update_password db session ~user ~pass;
-	tokens
-      | TaskSetEMail { user; mail } ->
-	user_update_alternative_email db session ~user ~mail;
-	tokens
-      | TaskCreateToken user ->
-	{ user; token = user_create_token db user } :: tokens
-      | TaskDeleteToken user ->
-	user_delete_token db session user;
-	tokens
-      | TaskSetAdmin { user; level } ->
-	user_update_admin db session user level;
-	tokens
-      | TaskDelete user ->
-	user_delete db session user;
-	tokens)
-    [] tasks
-
-let user_get_email db user =
-  match
-    execute_select_at_most_one db sql_get_email [str user]
-      (fun stmt -> get_stropt stmt 1)
-  with
-  | Some result -> result
-  | None -> None
-
+  let user_get_email db user =
+    match
+      execute_select_at_most_one db sql_get_email [str user]
+	(fun stmt -> get_stropt stmt 1)
+    with
+    | Some result -> result
+    | None -> None
+end
