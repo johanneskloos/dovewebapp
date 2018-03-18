@@ -26,12 +26,6 @@
 (alias ((name runtest) (action (run ./doveadmTest.exe))))
 
 (executable (
-  (name timeTest)
-  (libraries (doveapp kaputt))
-  (modules (timeTest))))
-(alias ((name runtest) (action (run ./timeTest.exe))))
-
-(executable (
   (name modelTest)
   (libraries (doveapp kaputt))
   (modules (modelTest))))
