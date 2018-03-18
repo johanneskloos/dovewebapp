@@ -2,26 +2,23 @@ open Database
 open Model
 type db = Database.db
 
-let sql_now = "strftime('%s', 'now')"
-let sql_later delay = "strftime('%s', 'now', '" ^ delay ^ "')"
-
 let sql_insert_session =
   "INSERT INTO sessions (sessionid, session_expires, username) " ^
-  "VALUES (?, " ^ sql_later !Config.sessions_timeout ^ ", ?)"
+  "VALUES (?, ?, ?)"
 let sql_expire_sessions =
-  "DELETE FROM sessions WHERE session_expires < " ^ sql_now
+  "DELETE FROM sessions WHERE session_expires < ?"
 let sql_delete_session =
   "DELETE FROM sessions WHERE sessionid = ?"
 
 let sql_retrieve_authorization =
   "SELECT users.username, admin FROM users, sessions " ^
-  "WHERE sessionid = ? AND session_expires >= " ^ sql_now
+  "WHERE sessionid = ? AND session_expires >= ?"
 let sql_check_token =
   "SELECT 1 FROM users WHERE username = ? AND token = ? " ^
-  "AND token_expires >= " ^ sql_now
+  "AND token_expires >= ?"
 let sql_retrieve_token =
   "SELECT token FROM users WHERE username = ? " ^
-  "AND token_expires >= " ^ sql_now
+  "AND token_expires >= ?"
 
 let sql_set_password =
   "UPDATE users SET password = ?, token = NULL, token_expires = NULL " ^
@@ -31,8 +28,7 @@ let sql_set_alternative_email =
 let sql_set_admin =
   "UPDATE users SET admin = ? WHERE username = ?"
 let sql_set_token =
-  "UPDATE users SET token = ?, token_expires = " ^
-  sql_later !Config.token_lifetime ^ " WHERE username = ?"
+  "UPDATE users SET token = ?, token_expires = ? WHERE username = ?"
 let sql_delete_token =
   "UPDATE users SET token = NULL, token_expires = NULL WHERE username = ?"
 
@@ -42,7 +38,7 @@ let sql_insert_user_password =
   "VALUES (?, ?, ?, ?)"
 let sql_insert_user_token =
   "INSERT INTO users (username, token, alternative_email, admin, token_expires) " ^
-  "VALUES (?, ?, ?, ?, " ^ sql_later !Config.token_lifetime ^ ")"
+  "VALUES (?, ?, ?, ?, ?)"
 
 let sql_list_users =
   "SELECT username, token, token_expires, alternative_email, admin " ^
@@ -50,7 +46,7 @@ let sql_list_users =
 
 let sql_expire_tokens =
   "UPDATE users SET token = NULL, token_expires = NULL " ^
-  "WHERE token_expires < " ^ sql_now
+  "WHERE token_expires < ?"
 
 let sql_get_email =
   "SELECT alternative_email FROM users WHERE username = ?"
@@ -63,12 +59,14 @@ end
 
 module Make(E: Externals) = struct
   type db = Database.db
+  let now delay =
+    Sqlite3.Data.INT (Int64.of_float (Sys.time() +. delay))
 
   let session_login db ~user ~pass =
     if E.auth ~user ~pass then
       let token = E.generate_token () in
       execute_update db sql_insert_session
-	[str token; str user];
+	[str token; now !Config.sessions_timeout; str user];
       Some token
     else
       None
@@ -81,7 +79,7 @@ module Make(E: Externals) = struct
 
   let session_retrieve db sessionid =
     execute_select_at_most_one db sql_retrieve_authorization
-      [str sessionid]
+      [str sessionid; now 0.]
       (fun stmt ->
 	 let user = get_str stmt 1
 	 and admin = get_bool stmt 2
@@ -90,7 +88,7 @@ module Make(E: Externals) = struct
 	      auth_level = if admin then Admin else User })
 
   let session_from_token db ~user ~token =
-    execute_select_at_most_one db sql_check_token [str user; str token]
+    execute_select_at_most_one db sql_check_token [str user; str token; now 0.]
       (fun _ ->
 	 { auth_session = None; auth_user = user; auth_level = User })
 
@@ -111,13 +109,13 @@ module Make(E: Externals) = struct
   let user_create_token db user =
     transaction_bracket db @@
     fun db ->
-    match execute_select_at_most_one db sql_retrieve_token [str user]
+    match execute_select_at_most_one db sql_retrieve_token [str user; now 0.]
 	    (fun stmt -> get_str stmt 1)
     with
     | Some token -> token
     | None ->
       let token = E.generate_token () in
-      execute_update db sql_set_token [str token; str user];
+      execute_update db sql_set_token [str token; now !Config.token_lifetime; str user];
       token
 
   let user_update_admin db session ~user ~level =
@@ -134,7 +132,7 @@ module Make(E: Externals) = struct
     let is_admin = match level with User -> false | Admin -> true
     and token = E.generate_token () in
     execute_update db sql_insert_user_token
-      [str user; str token; stropt altemail; bool is_admin];
+      [str user; str token; stropt altemail; bool is_admin; now !Config.token_lifetime];
     token
 
   let user_create_pw db session ~user ~pass ~altemail ~level =
@@ -161,8 +159,8 @@ module Make(E: Externals) = struct
     execute_select db sql_list_users [] user_collect [] |> List.rev
 
   let expire db =
-    execute_update db sql_expire_sessions [];
-    execute_update db sql_expire_tokens []
+    execute_update db sql_expire_sessions [now 0.];
+    execute_update db sql_expire_tokens [now 0.]
 
   let user_task_run db session tasks =
     need_admin session;
