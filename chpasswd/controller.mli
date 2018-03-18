@@ -1,4 +1,3 @@
-val cookie_name : string
 val validate_user : string -> string
 val validate_pass : string -> string
 val validate_email : string -> string

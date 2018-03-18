@@ -1,7 +1,5 @@
 open View
 
-let cookie_name = "session"
-
 let validate_string pred str =
   try
     for i = 0 to String.length str - 1 do
