@@ -7,7 +7,8 @@ exception InvalidPass
 exception ArgumentMissing of string
 exception ArgumentEmpty of string
 module Make(ModelImpl: Model.S)
-    (ViewImpl: View.S with type model = ModelImpl.db): sig
+    (ViewImpl: View.S with type model = ModelImpl.db)
+    (MailImpl: Mails.Strategy): sig
   val event_login : ViewImpl.model -> ViewImpl.view -> unit
   val event_admin : ViewImpl.model -> ViewImpl.view -> unit
   val event_forgot : ViewImpl.model -> ViewImpl.view -> unit

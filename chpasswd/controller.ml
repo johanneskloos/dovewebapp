@@ -57,10 +57,13 @@ exception ArgumentMissing of string
 exception ArgumentEmpty of string
 
 module Make
-    (ModelImpl: Model.S)(ViewImpl: View.S with type model = ModelImpl.db) =
+    (ModelImpl: Model.S)
+    (ViewImpl: View.S with type model = ModelImpl.db)
+    (MailImpl: Mails.Strategy) =
 struct
   open ViewImpl
   open Model
+  module Mail = Mails.Make(MailImpl)
 
   let event_login_login db view user pass =
     match ModelImpl.session_login db ~user ~pass with
@@ -74,7 +77,7 @@ struct
 
   let send_token_email db ~user ~token =
     let email = ModelImpl.user_get_email db user in
-    Mails.send_token_email ~email ~user ~token
+    Mail.send_token_email ~email ~user ~token
 
   let event_login_forgot db view user =
     let token = ModelImpl.user_create_token db user in
@@ -129,7 +132,7 @@ struct
       let token = ModelImpl.user_create_nopw db session ~user ~altemail ~level
       in begin match altemail with
       | Some mail ->
-	Mails.send_account_email mail token;
+	Mail.send_account_email mail token;
 	view_admin db view session [SCreatedUserSentToken { user; mail; level }]
       | None ->
 	view_admin db view session [SCreatedUserWithToken { user; token; level }]
