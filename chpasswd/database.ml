@@ -92,7 +92,7 @@ let connect path =
 let str t = Sqlite3.Data.TEXT t
 let stropt = function
   | Some t -> str t
-  | None -> Sqlite3.Data.NONE
+  | None -> Sqlite3.Data.NULL
 let bool b = Sqlite3.Data.INT (if b then 1L else 0L)
 let get_str stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.TEXT x -> x
@@ -102,11 +102,11 @@ let get_int64 stmt idx = match Sqlite3.column stmt idx with
   | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
 let get_int64opt stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.INT x -> Some x
-  | Sqlite3.Data.NONE -> None
+  | Sqlite3.Data.NULL -> None
   | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
 let get_stropt stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.TEXT x -> Some x
-  | Sqlite3.Data.NONE -> None
+  | Sqlite3.Data.NULL -> None
   | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
 let get_bool stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.INT 0L -> false
