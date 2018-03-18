@@ -5,7 +5,6 @@ end
 module Make(Strat: Strategy) = struct
   let format_and_send_mail subject template ~email ~token =
     let models = [
-      ("mail", Jg_types.Tstr email);
       ("token", Jg_types.Tstr token)
     ] in
     let body = Netsendmail.compose
