@@ -14,9 +14,9 @@
 
 (library (
   (name mocks)
-  (libraries (jingoo doveapp))
+  (libraries (jingoo doveapp kaputt))
   (wrapped false)
-  (modules (mailMock modelMock viewMock webMock databaseTestTools))))
+  (modules (mailMock modelMock viewMock webMock databaseTestTools testAssertions))))
 
 (executable (
   (name doveadmTest)
@@ -75,7 +75,7 @@
 
 (executable (
   (name viewCgiTest)
-  (libraries (doveapp kaputt))
+  (libraries (doveapp kaputt mocks))
   (modules (viewCgiTest))))
 (alias ((name runtest) (action (run ./viewCgiTest.exe))))
 
