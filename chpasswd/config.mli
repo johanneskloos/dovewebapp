@@ -1,0 +1,12 @@
+type 'a config_option
+val get : 'a config_option -> 'a
+val set_config_file : 'a config_option -> 'a -> unit
+val set_command_line : 'a config_option -> 'a -> unit
+val init : 'a -> 'a config_option
+val sessions_timeout : float config_option
+val token_lifetime : float config_option
+val domain : string config_option
+val datadir : string config_option
+val database : string config_option
+val config_args : (string * Arg.spec * string) list
+val parse_config_file : string -> unit
