@@ -14,7 +14,7 @@ let get_session_data view =
 let set_session_data view token = view.set_session <- Some token
 let output_page view status body =
   let cookies = match view.set_session with
-    | Some token -> [Netcgi.Cookie.make "sesion" token]
+    | Some token -> [Netcgi.Cookie.make "session" token]
     | None -> []
   and status = match status with
     | ViewWeb.StatOk -> `Ok
@@ -22,7 +22,7 @@ let output_page view status body =
     | ViewWeb.StatError -> `Internal_server_error
   in
   view.set_session <- None;
-  view.cgi # set_header ~set_cookies:cookies ~status ();
+  view.cgi # set_header ~set_cookies:cookies ~status ~cache:`No_cache ();
   view.cgi # out_channel # output_string body;
   view.cgi # out_channel # flush ();
   view.cgi # finalize ()
