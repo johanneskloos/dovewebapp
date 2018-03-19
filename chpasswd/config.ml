@@ -22,6 +22,7 @@ let domain =
 let datadir = init "/usr/local/share/accountadmin"
 let database = init "users.sqlite"
 let default_config = init true
+let mailserver = init "localhost"
 
 let config_args =
   Arg.[
@@ -30,6 +31,7 @@ let config_args =
     ("t", Float (set_command_line token_lifetime),
      "token lifetime (in seconds)");
     ("m", String (set_command_line domain), "Sender domain for e-mails");
+    ("M", String (set_command_line mailserver), "Mail server for SMTP");
     ("D", String (set_command_line datadir), "Data directory");
     ("d", String (set_command_line database), "Path to sqlite user database");
     ("n", Unit (fun () -> set_command_line default_config false),
@@ -58,6 +60,7 @@ let parse_config_file filename =
 	  | "domain" -> set_config_file domain rest
 	  | "data_directory" -> set_config_file datadir rest
 	  | "database" -> set_config_file database rest
+	  | "mailserver" -> set_config_file mailserver rest
 	  | key ->
 	    Format.eprintf "%s(%d): Unknown key %s" filename !lineno key;
 	    exit 1

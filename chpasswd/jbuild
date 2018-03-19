@@ -2,7 +2,7 @@
 
 (library (
   (name doveapp)
-  (libraries (calendar cryptokit jingoo netcgi2 sqlite3))
+  (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient))
   (wrapped false)
   (modules (
     config time token doveadm
