@@ -34,6 +34,7 @@ let config_args =
     ("-M", String (set_command_line mailserver), "Mail server for SMTP");
     ("-D", String (set_command_line datadir), "Data directory");
     ("-d", String (set_command_line database), "Path to sqlite user database");
+    ("-n", Unit (fun () -> set_command_line default_config false),
      "Do not read default config file")
   ]
 

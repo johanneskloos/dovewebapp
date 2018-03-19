@@ -37,7 +37,7 @@ let run_fcgi () =
 
 let usage_msg =
   "dovewebapp [-F] [-s session_timeout] [-t token_timeout] [-m maildomain]\n" ^
-  "           [-D datadir] [-d database] config files...\n"
+  "           [-D datadir] [-d database] [-n] config files...\n"
 
 let () =
   let fcgi = ref false in
