@@ -7,7 +7,7 @@
   (modules (
     config time token doveadm
     model database modelDatabase 
-    template mails
+    template mails mailSendmail
     view viewWeb viewCgi
     controller 
   ))))
