@@ -12,6 +12,8 @@ let get_session_data view =
   with Not_found -> None
 
 let set_session_data view token = view.set_session <- Some token
+let reset_session_data view = view.set_session <- None
+
 let output_page view status body =
   let cookies = match view.set_session with
     | Some token -> [Netcgi.Cookie.make "session" token]
