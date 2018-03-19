@@ -321,17 +321,17 @@ let test_view_login_failed =
     DatabaseTestTools.delete_tmpdir
 
 let admin_user_template =
-  "user={{user}};email={%if alt_email is null%}(none){%else%}{{alt_email}};" ^
-  "{%for msg in infos%}info:{{msg}};{%endfor%}" ^
-  "{%for msg in errors%}erros:{{msg}};{%endfor%}" 
+  "user={{user}};email={% if alt_email is undefined%}(none){%else%}{{alt_email}}{% endif %};" ^
+  "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
+  "{%for msg in errors%}error:{{msg.key}};{%endfor%}" 
 let admin_admin_template =
-  "user={{user}};email={%if alt_email is null%}(none){%else%}{{alt_email}};" ^
-  "{%for msg in infos%}info:{{msg}};{%endfor%}" ^
-  "{%for msg in errors%}error:{{msg}};{%endfor%}" ^
-  "{%for user in users%}user:{{user}};{%endfor%}"
+  "user={{user}};email={% if alt_email is undefined%}(none){%else%}{{alt_email}}{% endif %};" ^
+  "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
+  "{%for msg in errors%}error:{{msg.key}};{%endfor%}" ^
+  "{%for user in users%}user:{{user.user}};{%endfor%}"
 
-let expected_view_admin_user_all_messages = ""
-let expected_view_admin_admin_all_messages = ""
+let expected_view_admin_user_all_messages = "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;"
+let expected_view_admin_admin_all_messages = "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;user:bar;user:foo;"
 
 let test_view_admin_user_all_messages =
   Test.make_assert_test ~title:"view_admin, user"
