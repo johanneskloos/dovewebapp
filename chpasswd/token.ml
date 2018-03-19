@@ -1,5 +1,10 @@
+open Cryptokit
+
+let rng = Random.device_rng "/dev/urandom"
+let hex_transform = Hexa.encode ()
+
 let generate () =
-  let open Cryptokit in
-  let rand = Random.string Random.secure_rng 64
+  let rand = Random.string rng 64
   and time = Time.current_string ()
-  in hash_string (Hash.sha512 ()) (rand ^ time)
+  in transform_string hex_transform
+    (hash_string (Hash.sha512 ()) (rand ^ time))
