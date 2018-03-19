@@ -21,6 +21,7 @@ let domain =
   with _ -> init "example.com"
 let datadir = init "/usr/local/share/accountadmin"
 let database = init "users.sqlite"
+let default_config = init true
 
 let config_args =
   Arg.[
@@ -30,7 +31,9 @@ let config_args =
      "token lifetime (in seconds)");
     ("m", String (set_command_line domain), "Sender domain for e-mails");
     ("D", String (set_command_line datadir), "Data directory");
-    ("d", String (set_command_line database), "Path to sqlite user database")
+    ("d", String (set_command_line database), "Path to sqlite user database");
+    ("n", Unit (fun () -> set_command_line default_config false),
+     "Do not read default config file")
   ]
 
 let parse_config_file filename =

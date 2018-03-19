@@ -44,5 +44,7 @@ let () =
   Arg.parse
     (("F", Arg.Set fcgi, "run under FastCGI") :: Config.config_args)
     Config.parse_config_file usage_msg;
+  if Config.(get default_config) then
+    Config.parse_config_file "/etc/dovewebapp.conf";
   if !fcgi then run_fcgi () else run_cgi ()
 
