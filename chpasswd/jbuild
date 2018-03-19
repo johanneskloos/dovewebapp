@@ -39,7 +39,7 @@
 
 (executable (
   (name templateTest)
-  (libraries (doveapp kaputt))
+  (libraries (doveapp kaputt mocks))
   (modules (templateTest))))
 (alias ((name runtest) (action (run ./templateTest.exe))))
 
