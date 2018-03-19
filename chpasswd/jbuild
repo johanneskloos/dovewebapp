@@ -13,7 +13,7 @@
   ))))
 
 (library (
-  (name mocks)
+  (name testtools)
   (libraries (jingoo doveapp kaputt))
   (wrapped false)
   (modules (mailMock modelMock viewMock webMock databaseTestTools testAssertions))))
@@ -33,25 +33,25 @@
 
 (executable (
   (name controllerTest)
-  (libraries (doveapp mocks kaputt))
+  (libraries (doveapp testtools kaputt))
   (modules (controllerTest))))
 (alias ((name runtest) (action (run ./controllerTest.exe))))
 
 (executable (
   (name templateTest)
-  (libraries (doveapp kaputt mocks))
+  (libraries (doveapp kaputt testtools))
   (modules (templateTest))))
 (alias ((name runtest) (action (run ./templateTest.exe))))
 
 (executable (
   (name viewWebTest)
-  (libraries (doveapp kaputt mocks))
+  (libraries (doveapp kaputt testtools))
   (modules (viewWebTest))))
 (alias ((name runtest) (action (run ./viewWebTest.exe))))
 
 (executable (
   (name mailsTest)
-  (libraries (doveapp mocks kaputt))
+  (libraries (doveapp testtools kaputt))
   (modules (mailsTest))))
 (alias ((name runtest) (action (run ./mailsTest.exe))))
 
@@ -63,19 +63,19 @@
 
 (executable (
   (name databaseTest)
-  (libraries (doveapp kaputt mocks))
+  (libraries (doveapp kaputt testtools))
   (modules (databaseTest))))
 (alias ((name runtest) (action (run ./databaseTest.exe))))
 
 (executable (
   (name modelDatabaseTest)
-  (libraries (doveapp kaputt mocks))
+  (libraries (doveapp kaputt testtools))
   (modules (modelDatabaseTest))))
 (alias ((name runtest) (action (run ./modelDatabaseTest.exe))))
 
 (executable (
   (name viewCgiTest)
-  (libraries (doveapp kaputt mocks))
+  (libraries (doveapp kaputt testtools))
   (modules (viewCgiTest))))
 (alias ((name runtest) (action (run ./viewCgiTest.exe))))
 
