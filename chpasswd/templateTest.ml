@@ -2,7 +2,7 @@ open Kaputt
 open Template
 
 let test_from_file dir =
-  Config.datadir := dir;
+  Config.(set_command_line datadir dir);
   let tmpl = Filename.concat dir "test.tmpl" in
   let chan = open_out tmpl in
   output_string chan "Test {{value}}";

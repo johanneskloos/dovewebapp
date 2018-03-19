@@ -86,7 +86,7 @@ let test_session_login_success =
 	 (M.session_login db ~user:"foo" ~pass:"bar");
        Assertion.equal_int 1 (count_sessions db);
        Assertion.is_true (has_session db "foo" (Some "tok1")
-			    (Some (Sys.time () +. !Config.sessions_timeout))))
+			    (Some (Sys.time () +. Config.(get sessions_timeout)))))
 
 let test_session_login_fail =
   make_database_test ~title:"session_login, bad case"

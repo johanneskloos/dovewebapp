@@ -26,8 +26,8 @@ let setup_test () =
   let dir = DatabaseTestTools.setup_tmpdir () in
   write_template "forgot" dir;
   write_template "new" dir;
-  Config.datadir := dir;
-  Config.domain := "example.com";
+  Config.(set_command_line datadir dir);
+  Config.(set_command_line domain "example.com");
   MailMock.mails := [];
   dir
 

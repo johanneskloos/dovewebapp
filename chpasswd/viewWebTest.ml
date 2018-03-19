@@ -279,7 +279,7 @@ let test_view_login =
   Test.make_assert_test ~title:"view_login"
     (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "login.html") in
@@ -294,7 +294,7 @@ let test_view_login_token_sent =
   Test.make_assert_test ~title:"view_login, token sent"
     (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "login.html") in
@@ -309,7 +309,7 @@ let test_view_login_failed =
   Test.make_assert_test ~title:"view_login, login failed"
     (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "login.html") in
@@ -337,7 +337,7 @@ let test_view_admin_user_all_messages =
   Test.make_assert_test ~title:"view_admin, user"
     (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "admin_user.html") in
@@ -372,7 +372,7 @@ let test_view_admin_admin_all_messages =
   Test.make_assert_test ~title:"view_admin, admin"
     (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "admin_admin.html") in
@@ -412,7 +412,7 @@ let test_view_forgot_form =
   Test.make_assert_test ~title:"view_forgot_form"
    (fun () ->
        let dir = DatabaseTestTools.setup_tmpdir () in
-       Config.datadir := dir; dir)
+       Config.(set_command_line datadir dir); dir)
     (fun dir ->
        let view = make [] in
        let chan = open_out (Filename.concat dir "forgot.html") in
