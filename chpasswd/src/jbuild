@@ -20,7 +20,7 @@
 
 (executable (
   (name doveadmTest)
-  (libraries (doveapp kaputt))
+  (libraries (doveapp oUnit fmt))
   (modules (doveadmTest))
 ))
 (alias ((name runtest) (action (run ./doveadmTest.exe))))
