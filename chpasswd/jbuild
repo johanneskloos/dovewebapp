@@ -79,3 +79,9 @@
   (modules (viewCgiTest))))
 (alias ((name runtest) (action (run ./viewCgiTest.exe))))
 
+(executable (
+  (name application)
+  (public_name dovewebapp)
+  (package dovewebapp)
+  (libraries (doveapp netcgi2))
+  (modules application)))
