@@ -67,7 +67,7 @@ module Make(E: Externals) = struct
     if E.auth ~user ~pass then
       let token = E.generate_token () in
       execute_update db sql_insert_session
-	[str token; now !Config.sessions_timeout; str user];
+	[str token; now Config.(get sessions_timeout); str user];
       Some token
     else
       None
@@ -117,7 +117,7 @@ module Make(E: Externals) = struct
     | None ->
       let token = E.generate_token () in
       execute_update db sql_set_token
-	[str token; now !Config.token_lifetime; str user];
+	[str token; now Config.(get token_lifetime); str user];
       token
 
   let user_update_admin db session ~user ~level =
@@ -134,7 +134,7 @@ module Make(E: Externals) = struct
     let is_admin = match level with User -> false | Admin -> true
     and token = E.generate_token () in
     execute_update db sql_insert_user_token
-      [str user; str token; stropt altemail; bool is_admin; now !Config.token_lifetime];
+      [str user; str token; stropt altemail; bool is_admin; now Config.(get token_lifetime)];
     token
 
   let user_create_pw db session ~user ~pass ~altemail ~level =
