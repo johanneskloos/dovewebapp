@@ -26,15 +26,14 @@ let mailserver = init "localhost"
 
 let config_args =
   Arg.[
-    ("s", Float (set_command_line sessions_timeout),
+    ("-s", Float (set_command_line sessions_timeout),
      "session timeout (in seconds)");
-    ("t", Float (set_command_line token_lifetime),
+    ("-t", Float (set_command_line token_lifetime),
      "token lifetime (in seconds)");
-    ("m", String (set_command_line domain), "Sender domain for e-mails");
-    ("M", String (set_command_line mailserver), "Mail server for SMTP");
-    ("D", String (set_command_line datadir), "Data directory");
-    ("d", String (set_command_line database), "Path to sqlite user database");
-    ("n", Unit (fun () -> set_command_line default_config false),
+    ("-m", String (set_command_line domain), "Sender domain for e-mails");
+    ("-M", String (set_command_line mailserver), "Mail server for SMTP");
+    ("-D", String (set_command_line datadir), "Data directory");
+    ("-d", String (set_command_line database), "Path to sqlite user database");
      "Do not read default config file")
   ]
 
