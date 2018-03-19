@@ -1,4 +1,4 @@
-open Kaputt
+open OUnit2
 
 let schema =
   {|
@@ -26,19 +26,27 @@ module ExternalsMock = struct
     "tok" ^ string_of_int !token_counter
 end
 
+let assert_equal ?ctxt ?cmp ?pp_diff ?msg ?(fmt=Fmt.nop) =
+  assert_equal ?ctxt ?cmp ?pp_diff ?msg ~printer:(Fmt.to_to_string fmt)
+let assert_raises_some ?msg fn =
+  try
+    fn ();
+    assert_failure
+      ((match msg with Some prefix -> prefix ^ ": " | None -> "") ^
+       "Expected an exception")
+  with _ -> ()
+
 let max_time = 9223372036854774784.
 let min_time = -1.
 
-let setup_database () =
-  ExternalsMock.token_counter := 0;
-  DatabaseTestTools.setup_database schema
-
 let make_database_test ~title fn =
   let open Database in
-  Test.make_assert_test ~title setup_database
-    (fun handle ->
-       fn { handle = snd handle; in_transaction = false }; handle)
-    DatabaseTestTools.teardown_database
+  title >:: fun ctx ->
+    ExternalsMock.token_counter := 0;
+    let dir = bracket_tmpdir ctx in
+    let db = Sqlite3.db_open (Filename.concat dir "test.db") in
+    Database.expect_ok (Sqlite3.exec db schema);
+    fn { handle = db; in_transaction = false }
 
 module M = ModelDatabase.Make(ExternalsMock)
 
@@ -56,13 +64,21 @@ let encode_expiry = function
 
 let has_user db ~user ~pass ~email ~token ~token_expires ~level =
   Database.execute_select_one db
-    ("SELECT count(*) FROM users WHERE username = ? AND password = ? AND " ^
-     "token = ? AND alternative_email = ? AND admin = ? AND " ^
-     "abs(token_expires - ?) < 10") (* Give 10 seconds tolerance *)
+    ("SELECT token_expires FROM users WHERE username = ? AND password = ? AND " ^
+     "token = ? AND alternative_email = ? AND admin = ?")
     Database.[str user; stropt pass; stropt token;
-	      encode_expiry token_expires; stropt email;
+	      stropt email;
 	      bool (match level with Model.User -> false | _ -> true)]
-    (fun row -> Database.get_int64 row 0 = 1L)
+    (fun row ->
+       match Database.get_int64opt row 0, token_expires with
+       | Some token_expires', Some token_expires ->
+	 Int64.(abs (sub token_expires token_expires') < of_int 10)
+       | None, None -> true
+       | _, _ -> false)
+
+let assert_has_user db ~user ~pass ~email ~token ~token_expires ~level =
+  assert_bool ("Expected user " ^ user ^ " to exist as specified")
+    (has_user db ~user ~pass ~email ~token ~token_expires ~level)
 
 let add_user db ~user ~pass ~email ~token ~token_expires ~level =
   Database.execute_update db
@@ -82,18 +98,19 @@ let has_session db ~user ~session ~expires =
 let test_session_login_success =
   make_database_test ~title:"session_login, good case"
     (fun db ->
-       Assertion.equal (Some "tok1")
+       assert_equal ~fmt:Fmt.(option string) (Some "tok1")
 	 (M.session_login db ~user:"foo" ~pass:"bar");
-       Assertion.equal_int 1 (count_sessions db);
-       Assertion.is_true (has_session db "foo" (Some "tok1")
-			    (Some (Sys.time () +. Config.(get sessions_timeout)))))
+       assert_equal ~fmt:Fmt.int 1 (count_sessions db);
+       assert_bool "No sessoin for foo"
+	 (has_session db "foo" (Some "tok1")
+	    (Some (Sys.time () +. Config.(get sessions_timeout)))))
 
 let test_session_login_fail =
   make_database_test ~title:"session_login, bad case"
     (fun db ->
-       Assertion.equal None
+       assert_equal ~fmt:Fmt.(option string) None
 	 (M.session_login db ~user:"foo" ~pass:"baz");
-       Assertion.equal_int 0 (count_sessions db))
+       assert_equal ~fmt:Fmt.int 0 (count_sessions db))
 
 let setup_session db timeout =
   Database.execute_update db
@@ -107,7 +124,7 @@ let test_session_logout =
        setup_session db 100.;
        M.session_logout db { auth_session = Some "sid1"; auth_user = "foo";
 			     auth_level = Model.User };
-       Assertion.equal_int 0 (count_sessions db))
+       assert_equal ~fmt:Fmt.int 0 (count_sessions db))
 
 let test_session_logout_diff_sid =
   make_database_test ~title:"session_logout, different sid"
@@ -115,9 +132,10 @@ let test_session_logout_diff_sid =
        setup_session db 100.;
        M.session_logout db { auth_session = Some "sid2"; auth_user = "foo";
 			     auth_level = Model.User };
-       Assertion.equal_int 1 (count_sessions db);
-       Assertion.is_true (has_session db "foo" (Some "sid1")
-			    (Some 100.)))
+       assert_equal ~fmt:Fmt.int 1 (count_sessions db);
+       assert_bool "Has no session sid1"
+	 (has_session db "foo" (Some "sid1")
+	    (Some 100.)))
 
 let test_session_logout_no_sid =
   make_database_test ~title:"session_logout, no sid"
@@ -125,29 +143,24 @@ let test_session_logout_no_sid =
        setup_session db 100.;
        M.session_logout db { auth_session = None; auth_user = "foo";
 			     auth_level = Model.User };
-       Assertion.equal_int 1 (count_sessions db);
-       Assertion.is_true (has_session db "foo" (Some "sid1")
-			    (Some 100.)))
+       assert_equal ~fmt:Fmt.int 1 (count_sessions db);
+       assert_bool "Has no session sid1"
+	 (has_session db "foo" (Some "sid1")
+	    (Some 100.)))
 
-let print_string_option pp = function
-  | None -> Format.fprintf pp "(none)"
-  | Some s -> Format.fprintf pp "%s" s
-let print_level pp = function
+let pp_level pp = function
   | Model.User -> Format.fprintf pp "user"
   | Model.Admin -> Format.fprintf pp "admin"
-
-let print_authdata_option =
-  function
-  | None -> "(none)"
-  | Some Model.{  auth_session; auth_user; auth_level } ->
-    Format.asprintf "%a: %s, %a" print_string_option auth_session auth_user
-      print_level auth_level
+let pp_authdata pp Model.{ auth_session; auth_user; auth_level } =
+  let open Fmt in
+  Format.fprintf pp "%a: %s, %a" (option string) auth_session auth_user
+      pp_level auth_level
 
 let test_session_retrieve_impl db =
   setup_session db max_time;
   add_user ~user:"foo" ~pass:None ~email:None ~token:None
     ~token_expires:None ~level:Model.User db;
-  Assertion.equal ~prn:print_authdata_option
+  assert_equal ~fmt:(Fmt.option pp_authdata)
     (Some Model.{ auth_session = Some "sid1"; auth_user = "foo";
 		  auth_level = User })
     (M.session_retrieve db "sid1")
@@ -162,7 +175,7 @@ let test_session_retrieve_2 =
        setup_session db max_time;
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
 	 ~token_expires:None ~level:Model.Admin db;
-       Assertion.equal
+  assert_equal ~fmt:(Fmt.option pp_authdata)
 	 (Some Model.{ auth_session = Some "sid1"; auth_user = "foo";
 		       auth_level = Admin })
 	 (M.session_retrieve db "sid1"))
@@ -173,20 +186,22 @@ let test_session_no_session =
        setup_session db max_time;
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
 	 ~token_expires:None ~level:Model.Admin db;
-       Assertion.equal None (M.session_retrieve db "sid2"))
+  assert_equal ~fmt:(Fmt.option pp_authdata)
+       None (M.session_retrieve db "sid2"))
 
 let test_session_no_user =
   make_database_test ~title:"session_retrieve, no user data"
     (fun db ->
        setup_session db max_time;
-       Assertion.equal None (M.session_retrieve db "sid1"))
+  assert_equal ~fmt:(Fmt.option pp_authdata)
+    None (M.session_retrieve db "sid1"))
 
 let test_session_from_token =
   make_database_test ~title:"session_from_token"
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
 	 ~token_expires:(Some max_time) ~level:Model.Admin db;
-       Assertion.equal ~prn:print_authdata_option
+  assert_equal ~fmt:(Fmt.option pp_authdata)
 	 (Some Model.{ auth_session = None; auth_user = "foo";
 		       auth_level = User })
 	 (M.session_from_token db ~user:"foo" ~token:"tok"))
@@ -196,7 +211,7 @@ let test_session_from_token_expired =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
 	 ~token_expires:(Some min_time) ~level:Model.Admin db;
-       Assertion.equal ~prn:print_authdata_option None
+  assert_equal ~fmt:(Fmt.option pp_authdata) None
 	 (M.session_from_token db ~user:"foo" ~token:"tok"))
 
 let test_session_from_token_wrong_token =
@@ -204,7 +219,7 @@ let test_session_from_token_wrong_token =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
 	 ~token_expires:(Some max_time) ~level:Model.Admin db;
-       Assertion.equal None
+  assert_equal ~fmt:(Fmt.option pp_authdata) None
 	 (M.session_from_token db ~user:"foo" ~token:"wrong"))
 
 let test_session_from_token_wrong_user =
@@ -212,7 +227,7 @@ let test_session_from_token_wrong_user =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
 	 ~token_expires:(Some max_time) ~level:Model.Admin db;
-       Assertion.equal None
+  assert_equal ~fmt:(Fmt.option pp_authdata) None
 	 (M.session_from_token db ~user:"bar" ~token:"tok"))
 
 let test_session_from_token_no_token =
@@ -220,7 +235,7 @@ let test_session_from_token_no_token =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
 	 ~token_expires:None ~level:Model.Admin db;
-       Assertion.equal None
+  assert_equal ~fmt:(Fmt.option pp_authdata) None
 	 (M.session_from_token db ~user:"foo" ~token:"wrong"))
 
 let auth_user =
@@ -240,7 +255,7 @@ let test_user_update_password_user =
        add_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
        M.user_update_password db auth_user ~user ~pass:"baz";
-       has_user db ~user ~pass:(Some "baz")
+       assert_has_user db ~user ~pass:(Some "baz")
 	 ~email ~token ~token_expires ~level)
 
 let test_user_update_password_user_reset_token =
@@ -254,7 +269,7 @@ let test_user_update_password_user_reset_token =
        add_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
        M.user_update_password db auth_user ~user ~pass:"baz";
-       has_user db ~user ~pass:(Some "baz")
+       assert_has_user db ~user ~pass:(Some "baz")
 	 ~email ~token:None ~token_expires:None ~level)
 
 
@@ -269,7 +284,7 @@ let test_user_update_password_admin =
        add_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
        M.user_update_password db auth_admin ~user ~pass:"baz";
-       has_user db ~user ~pass:(Some "baz")
+       assert_has_user db ~user ~pass:(Some "baz")
 	 ~email ~token ~token_expires ~level)
 
 let test_user_update_password_nonexistant_user =
@@ -283,7 +298,7 @@ let test_user_update_password_nonexistant_user =
        add_user db ~user:"blah" ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
        M.user_update_password db auth_admin ~user ~pass:"baz";
-       has_user db ~user ~pass:(Some "bar")
+       assert_has_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level)
 
 let test_user_update_password_wrong_user =
@@ -295,7 +310,7 @@ let test_user_update_password_wrong_user =
        and level = Model.User in
        add_user db ~user:"blah" ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
-       Assertion.raises
+       assert_raises_some
 	 (fun () -> M.user_update_password db auth_user
 	     ~user:"blah" ~pass:"baz"))
 
@@ -309,7 +324,7 @@ let test_user_update_password_bad_password =
        and level = Model.User in
        add_user db ~user:"blah" ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
-       Assertion.raises
+       assert_raises_some
 	 (fun () ->
 	    M.user_update_password db auth_admin ~user ~pass:"bad"))
 
@@ -325,7 +340,7 @@ let test_user_update_alternative_email_user =
 	 ~token ~token_expires ~level;
        M.user_update_alternative_email db auth_user
 	 ~user ~mail:(Some "abc@example.net");
-       has_user db ~user ~pass
+       assert_has_user db ~user ~pass
 	 ~email:(Some "abc@example.net") ~token ~token_expires ~level)
 
 let test_user_update_alternative_email_user_from_none =
@@ -340,7 +355,7 @@ let test_user_update_alternative_email_user_from_none =
 	 ~token ~token_expires ~level;
        M.user_update_alternative_email db auth_user
 	 ~user ~mail:(Some "abc@example.net");
-       has_user db ~user ~pass
+       assert_has_user db ~user ~pass
 	 ~email:(Some "abc@example.net") ~token ~token_expires ~level)
 
 let test_user_update_alternative_email_user_to_unset =
@@ -354,7 +369,7 @@ let test_user_update_alternative_email_user_to_unset =
        add_user db ~user ~pass ~email:(Some "xyz@example.com")
 	 ~token ~token_expires ~level;
        M.user_update_alternative_email db auth_user ~user ~mail:None;
-       has_user db ~user ~pass
+       assert_has_user db ~user ~pass
 	 ~email:None ~token ~token_expires ~level)
 
 let test_user_update_alternative_email_nonexistant_user =
@@ -369,7 +384,7 @@ let test_user_update_alternative_email_nonexistant_user =
 	 ~email ~token ~token_expires ~level;
        M.user_update_alternative_email db auth_admin
 	 ~user:"blah" ~mail:(Some "a@b.io");
-       has_user db ~user ~pass:(Some "bar")
+       assert_has_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level)
 
 let test_user_update_alternative_email_wrong_user =
@@ -381,7 +396,7 @@ let test_user_update_alternative_email_wrong_user =
        and level = Model.User in
        add_user db ~user:"blah" ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
-       Assertion.raises
+       assert_raises_some
 	 (fun () -> M.user_update_alternative_email db auth_user
 	     ~user:"blah" ~mail:(Some "a@b.io")))
 
@@ -396,7 +411,7 @@ let test_user_delete =
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
        M.user_delete db auth_user user;
-       Assertion.equal_int 0 (count_users db))
+       assert_equal ~fmt:Fmt.int 0 (count_users db))
 
 let test_user_delete_admin =
   make_database_test ~title:"user_delete, as admin"
@@ -409,7 +424,7 @@ let test_user_delete_admin =
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
        M.user_delete db auth_admin user;
-       Assertion.equal_int 0 (count_users db))
+       assert_equal ~fmt:Fmt.int 0 (count_users db))
   
 let test_user_delete_wrong_user =
   make_database_test ~title:"user_delete, as wrong user"
@@ -421,7 +436,7 @@ let test_user_delete_wrong_user =
        and token_expires = None
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
-       Assertion.raises (fun () -> M.user_delete db auth_user user))
+       assert_raises_some (fun () -> M.user_delete db auth_user user))
 
 let test_user_create_token =
   make_database_test ~title:"user_create_token"
@@ -433,9 +448,9 @@ let test_user_create_token =
        and token_expires = None
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
-       Assertion.equal_string "tok1" (M.user_create_token db user);
-       has_user db ~user ~pass ~email
-	 ~token:(Some "tok1") ~token_expires:(Some (Sys.time ())) ~level)
+       assert_equal ~fmt:Fmt.string "tok1" (M.user_create_token db user);
+       assert_has_user db ~user ~pass ~email
+	 ~token:(Some "tok1") ~token_expires:(Some (Int64.of_float (Sys.time ()))) ~level)
 
 let test_user_create_token_expired =
   make_database_test ~title:"user_create_token, expired token"
@@ -447,9 +462,9 @@ let test_user_create_token_expired =
        and token_expires = Some min_time
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
-       Assertion.equal_string "tok1" (M.user_create_token db user);
-       has_user db ~user ~pass ~email
-	 ~token:(Some "tok1") ~token_expires:(Some (Sys.time ())) ~level)
+       assert_equal ~fmt:Fmt.string "tok1" (M.user_create_token db user);
+       assert_has_user db ~user ~pass ~email
+	 ~token:(Some "tok1") ~token_expires:(Some (Int64.of_float (Sys.time ()))) ~level)
 
 let test_user_create_token_reuse =
   make_database_test ~title:"user_create_token, recycled token"
@@ -461,9 +476,9 @@ let test_user_create_token_reuse =
        and token_expires = Some max_time
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
-       Assertion.equal_string "rtok" (M.user_create_token db user);
-       has_user db ~user ~pass ~email
-	 ~token:(Some "rtok") ~token_expires:(Some max_time) ~level)
+       assert_equal ~fmt:Fmt.string "rtok" (M.user_create_token db user);
+       assert_has_user db ~user ~pass ~email
+	 ~token:(Some "rtok") ~token_expires:(Some (Int64.of_float max_time)) ~level)
 
 let test_user_update_admin_user =
   make_database_test ~title:"user_update_admin, as user"
@@ -475,7 +490,7 @@ let test_user_update_admin_user =
        and token_expires = None
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
-       Assertion.raises (fun () ->
+       assert_raises_some (fun () ->
 	   M.user_update_admin db auth_user ~user ~level:Model.User))
 
 let test_user_update_admin_admin =
@@ -489,7 +504,7 @@ let test_user_update_admin_admin =
        and level = Model.User in
        add_user db ~user ~pass ~email ~token ~token_expires ~level;
        M.user_update_admin db auth_admin ~user ~level:Model.Admin;
-       has_user db ~user ~pass ~email ~token ~token_expires ~level:Model.Admin)
+       assert_has_user db ~user ~pass ~email ~token ~token_expires ~level:Model.Admin)
 
 let test_user_update_admin_nonexistant_user =
   make_database_test ~title:"user_update_admin, user does not exist"
@@ -503,7 +518,7 @@ let test_user_update_admin_nonexistant_user =
 	 ~email ~token ~token_expires ~level;
        M.user_update_admin db auth_admin
 	 ~user:"blah" ~level:Model.Admin;
-       has_user db ~user ~pass:(Some "bar")
+       assert_has_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level)
 
 let test_user_update_admin_wrong_user =
@@ -515,7 +530,7 @@ let test_user_update_admin_wrong_user =
        and level = Model.User in
        add_user db ~user:"blah" ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
-       Assertion.raises
+       assert_raises_some
 	 (fun () -> M.user_update_admin db auth_user
 	     ~user:"blah" ~level:Model.User))
 
@@ -529,7 +544,7 @@ let test_user_delete_token_user =
        and level = Model.User in
        add_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
-       Assertion.raises
+       assert_raises_some
 	 (fun () -> M.user_delete_token db auth_user user))
 
 let test_user_delete_token_admin =
@@ -543,13 +558,13 @@ let test_user_delete_token_admin =
        add_user db ~user ~pass:(Some "bar")
 	 ~email ~token ~token_expires ~level;
        M.user_delete_token db auth_admin user;
-       has_user db ~user ~pass:(Some "bar")
+       assert_has_user db ~user ~pass:(Some "bar")
 	 ~email ~token:None ~token_expires:None ~level)
 
 let test_user_create_nopw_user =
   make_database_test ~title:"user_create_nopw, as user"
     (fun db ->
-       Assertion.raises
+       assert_raises_some
 	 (fun () ->
 	    M.user_create_nopw db auth_user ~user:"blah"
 	      ~altemail:None ~level:Model.User))
@@ -562,9 +577,9 @@ let test_user_create_nopw_admin =
        and level = Model.User in
        let token = M.user_create_nopw db auth_admin ~user
 	   ~altemail:email ~level in
-       Assertion.equal_string "tok1" token;
-       has_user db ~user ~pass:None ~token:(Some token)
-	 ~token_expires:(Some (Sys.time ())) ~level ~email)
+       assert_equal ~fmt:Fmt.string "tok1" token;
+       assert_has_user db ~user ~pass:None ~token:(Some token)
+	 ~token_expires:(Some (Int64.of_float (Sys.time ()))) ~level ~email)
 
 let test_user_create_nopw_admin_dup =
   make_database_test ~title:"user_create_nopw, as admin, user exists"
@@ -574,13 +589,13 @@ let test_user_create_nopw_admin_dup =
        and level = Model.User in
        add_user db ~user ~pass:None ~token:None
 	 ~token_expires:None ~level ~email;
-       Assertion.raises (fun () ->
+       assert_raises_some (fun () ->
 	   M.user_create_nopw db auth_admin ~user ~altemail:email ~level))
 
 let test_user_create_pw_user =
   make_database_test ~title:"user_create_pw, as user"
     (fun db ->
-       Assertion.raises
+       assert_raises_some
 	 (fun () ->
 	    M.user_create_pw db auth_user ~user:"blah" ~pass:"xyz"
 	      ~altemail:None ~level:Model.User))
@@ -593,7 +608,7 @@ let test_user_create_pw_admin =
        and level = Model.User
        and pass = "xyz" in
        M.user_create_pw db auth_admin ~user ~altemail:email ~level ~pass;
-       has_user db ~user ~pass:(Some ("hash:xyz")) ~token:None
+       assert_has_user db ~user ~pass:(Some ("hash:xyz")) ~token:None
 	 ~token_expires:None ~level ~email)
 
 let test_user_create_pw_admin_dup =
@@ -605,7 +620,7 @@ let test_user_create_pw_admin_dup =
        and level = Model.User in
        add_user db ~user ~pass:None ~token:None
 	 ~token_expires:None ~level ~email;
-       Assertion.raises (fun () ->
+       assert_raises_some (fun () ->
 	   M.user_create_pw db auth_admin ~user ~altemail:email ~level ~pass))
 
 let test_user_create_pw_admin_bad_pass =
@@ -615,12 +630,12 @@ let test_user_create_pw_admin_bad_pass =
        and email = None
        and pass = "bad"
        and level = Model.User in
-       Assertion.raises (fun () ->
+       assert_raises_some (fun () ->
 	   M.user_create_pw db auth_admin ~user ~altemail:email ~level ~pass))
 
 let test_user_list_user =
   make_database_test ~title:"user_list, as user"
-    (fun db -> Assertion.raises (fun () -> M.user_list db auth_user))
+    (fun db -> assert_raises_some (fun () -> M.user_list db auth_user))
 
 let test_user_list_admin =
   make_database_test ~title:"user_list, as admin"
@@ -632,8 +647,7 @@ let test_user_list_admin =
        and token_expires = None
        and level = Model.Admin in
        add_user db ~user ~pass ~token ~token_expires ~level ~email;
-       Assertion.make_equal_list (=)
-	 (fun _ -> "some user data")
+       assert_equal
 	 [Model.{ user_name = user; user_token = token;
 		  user_expires = token_expires;
 		  user_alt_email = email; user_level = level }]
@@ -649,7 +663,7 @@ let test_user_get_email =
        and token_expires = None
        and level = Model.Admin in
        add_user db ~user ~pass ~token ~token_expires ~level ~email;
-       Assertion.equal email (M.user_get_email db user))
+       assert_equal ~fmt:Fmt.(option string) email (M.user_get_email db user))
 
 let test_user_get_email_none =
   make_database_test ~title:"user_get_email, no email set"
@@ -661,14 +675,14 @@ let test_user_get_email_none =
        and token_expires = None
        and level = Model.Admin in
        add_user db ~user ~pass ~token ~token_expires ~level ~email;
-       Assertion.equal email (M.user_get_email db user))
+       assert_equal ~fmt:Fmt.(option string) email (M.user_get_email db user))
 
 let test_user_get_email_no_such_user =
   make_database_test ~title:"user_get_email, no such user"
     (fun db ->
-       Assertion.equal None (M.user_get_email db "foo"))
+       assert_equal ~fmt:Fmt.(option string) None (M.user_get_email db "foo"))
 
-let () = Test.run_tests
+let tests = "ModelDatabase" >:::
     [ test_session_login_success; test_session_login_fail;
       test_session_logout; test_session_logout_diff_sid;
       test_session_logout_no_sid; test_session_retrieve;
@@ -697,5 +711,3 @@ let () = Test.run_tests
       test_user_create_pw_admin_dup; test_user_create_pw_admin_bad_pass;
       test_user_list_user; test_user_list_admin; test_user_get_email;
       test_user_get_email_none; test_user_get_email_no_such_user ]
-
-

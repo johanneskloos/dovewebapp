@@ -1,22 +1,32 @@
-open Kaputt
+let check_token_format token =
+  try
+    for i = 0 to String.length token - 1 do
+      match String.unsafe_get token i with
+      | 'A' .. 'F' | 'a' .. 'f' | '0' .. '9' -> ()
+      | _ -> raise Exit
+    done;
+    true
+  with Exit -> false
 
-let check_token_format =
-  let open Specification in
-  always ==> for_all_string is_digit_hex_char
 
-let token_format_test =
-  Test.make_random_test ~title:"generate" ~nb_runs:500
-    Generator.unit Token.generate [check_token_format]
+let token_format_test_qc =
+  let open QCheck in
+  Test.make ~count:500 ~name:"generate - format"
+    unit (fun () -> check_token_format (Token.generate ()))
 
 module StringSet = Set.Make(String)
 let token_unique_test =
-  Test.make_simple_test ~title:"generate uniqueness"
-    (fun () ->
-       let size = 1000 in
-       let set = ref StringSet.empty in
-       for i = 1 to size do
-	 set := StringSet.add (Token.generate ()) !set;
-       done;
-       Assertion.equal_int ~msg:"Set size" size (StringSet.cardinal !set))
+  let open OUnit2 in
+  "generate uniqueness" >:: fun ctx ->
+    let size = 1000 in
+    let set = ref StringSet.empty in
+    for i = 1 to size do
+      set := StringSet.add (Token.generate ()) !set;
+    done;
+    assert_equal ~printer:string_of_int ~msg:"Set size"
+      size (StringSet.cardinal !set)
 
-let () = Test.run_tests [token_format_test; token_unique_test]
+let tests =
+  let open OUnit2 in
+  "Token" >::: [QCheck_runner.to_ounit_test token_format_test_qc |> OUnit.ounit2_of_ounit1;
+		token_unique_test]

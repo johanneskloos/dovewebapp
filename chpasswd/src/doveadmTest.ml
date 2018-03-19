@@ -37,4 +37,3 @@ let tests = "Doveadm tests" >::: [
     test_password_encode_3;
     test_password_encode_4;
   ]
-let () = run_test_tt_main tests

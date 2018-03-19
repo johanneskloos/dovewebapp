@@ -12,72 +12,11 @@
     controller 
   ))))
 
-(library (
-  (name testtools)
-  (libraries (jingoo doveapp kaputt))
-  (wrapped false)
-  (modules (mailMock modelMock viewMock webMock databaseTestTools testAssertions))))
-
 (executable (
-  (name doveadmTest)
-  (libraries (doveapp oUnit fmt))
-  (modules (doveadmTest))
-))
-(alias ((name runtest) (action (run ./doveadmTest.exe))))
-
-(executable (
-  (name modelTest)
-  (libraries (doveapp kaputt))
-  (modules (modelTest))))
-(alias ((name runtest) (action (run ./modelTest.exe))))
-
-(executable (
-  (name controllerTest)
-  (libraries (doveapp testtools kaputt))
-  (modules (controllerTest))))
-(alias ((name runtest) (action (run ./controllerTest.exe))))
-
-(executable (
-  (name templateTest)
-  (libraries (doveapp kaputt testtools))
-  (modules (templateTest))))
-(alias ((name runtest) (action (run ./templateTest.exe))))
-
-(executable (
-  (name viewWebTest)
-  (libraries (doveapp kaputt testtools))
-  (modules (viewWebTest))))
-(alias ((name runtest) (action (run ./viewWebTest.exe))))
-
-(executable (
-  (name mailsTest)
-  (libraries (doveapp testtools kaputt))
-  (modules (mailsTest))))
-(alias ((name runtest) (action (run ./mailsTest.exe))))
-
-(executable (
-  (name tokenTest)
-  (libraries (doveapp kaputt))
-  (modules (tokenTest))))
-(alias ((name runtest) (action (run ./tokenTest.exe))))
-
-(executable (
-  (name databaseTest)
-  (libraries (doveapp kaputt testtools))
-  (modules (databaseTest))))
-(alias ((name runtest) (action (run ./databaseTest.exe))))
-
-(executable (
-  (name modelDatabaseTest)
-  (libraries (doveapp kaputt testtools))
-  (modules (modelDatabaseTest))))
-(alias ((name runtest) (action (run ./modelDatabaseTest.exe))))
-
-(executable (
-  (name viewCgiTest)
-  (libraries (doveapp kaputt testtools))
-  (modules (viewCgiTest))))
-(alias ((name runtest) (action (run ./viewCgiTest.exe))))
+  (name tests)
+  (libraries (doveapp oUnit fmt qcheck))
+  (modules (mailMock modelMock viewMock webMock controllerTest databaseTest doveadmTest mailsTest modelDatabaseTest modelTest templateTest tokenTest viewCgiTest viewWebTest tests))))
+(alias ((name runtest) (action (run ./tests.exe))))
 
 (executable (
   (name application)
