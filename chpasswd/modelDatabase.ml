@@ -11,14 +11,15 @@ let sql_delete_session =
   "DELETE FROM sessions WHERE sessionid = ?"
 
 let sql_retrieve_authorization =
-  "SELECT users.username, admin FROM users, sessions " ^
-  "WHERE sessionid = ? AND session_expires >= ?"
+  "SELECT users.username, users.admin FROM users, sessions " ^
+  "WHERE users.username = sessions.username AND sessions.sessionid = ? " ^
+  "AND sessions.session_expires >= ?"
 let sql_check_token =
   "SELECT 1 FROM users WHERE username = ? AND token = ? " ^
   "AND token_expires >= ?"
 let sql_retrieve_token =
   "SELECT token FROM users WHERE username = ? " ^
-  "AND token_expires >= ?"
+  "AND ? <= token_expires"
 
 let sql_set_password =
   "UPDATE users SET password = ?, token = NULL, token_expires = NULL " ^
