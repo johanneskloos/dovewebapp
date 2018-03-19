@@ -1,62 +1,71 @@
 open View
-type message_type = Info of string | Error of string
+type message_type =
+    Info of string * (string * Jg_types.tvalue) list
+  | Error of string * (string * Jg_types.tvalue) list
 
 let level_to_string =
-  function Model.User -> "regular user" | Admin -> "administrator"
+  function Model.User -> "user" | Admin -> "admin"
+let level_to_tvalue =
+  let open Jg_types in
+  function Model.User -> Tbool false | _ -> Tbool true
 
-let format_message = function
+let format_message =
+  let open Jg_types in function
   | SUpdPassword user ->
-    Info ("Updated pasword for " ^ user)
+    Info ("upd_password", [ ("user", Tstr user) ])
   | SUpdEMail { user; mail = Some mail } ->
-    Info ("Updated alternative e-mail for " ^ user ^ " to " ^ mail)
+    Info ("upd_email", [ ("user", Tstr user); ("mail", Tstr mail) ])
   | SUpdEMail { user; mail = None } ->
-    Info ("Removed alternative e-mail for " ^ user)
+    Info ("upd_email", [ ("user", Tstr user) ])
   | SUpdAdmin { user; level = User } ->
-    Info ("Made " ^ user ^ " a regular user")
+    Info ("set_user", [ ("user", Tstr user)])
   | SUpdAdmin { user; level = Admin } ->
-    Info ("Made " ^ user ^ " an administrator")
+    Info ("set_admin", [ ("user", Tstr user)])
   | SSentToken user ->
-    Info ("Sent password reset token to " ^ user)
+    Info ("token_sent", [ ("user", Tstr user)])
   | SDeletedToken user ->
-    Info ("Deleted password reset token for " ^ user)
+    Info ("token_deleted", [ ("user", Tstr user)])
   | SCreatedUser { user; level } ->
-    Info ("Created user " ^ user ^ "(password set, " ^
-	  level_to_string level ^")")
+    Info ("created", [ ("user", Tstr user);
+			    ("level", level_to_tvalue level) ])
   | SCreatedUserSentToken { user; mail; level } ->
-    Info ("Created user " ^ user ^
-	  "(password reset mail sent to " ^ mail ^ ", " ^
-	  level_to_string level ^")")
+    Info ("created", [ ("user", Tstr user);
+			    ("level", level_to_tvalue level);
+			    ("mail", Tstr mail) ])
   | SCreatedUserWithToken { user; token; level } ->
-    Info ("Created user " ^ user ^
-	  "(token: <span class=\"token\">" ^ token ^
-	  "</span>, " ^ level_to_string level ^")")
+    Info ("created", [ ("user", Tstr user);
+			    ("level", level_to_tvalue level);
+			    ("token", Tstr token) ])
   | SDeletedUser user ->
-    Info ("Deleted user " ^ user)
+    Info ("user_deleted", [("user",Tstr user)])
   | FDatabase err ->
-    Error ("Database error: " ^ err)
+    Error ("err_db", [("detail", Tstr err)])
   | FExternal err ->
-    Error ("Error in external program: " ^ err)
-  | FDeleteAllAdmin -> Error "Would delete all admin accounts"
-  | FDeleteCurrent -> Error "Would delete loggied-in account"
+    Error ("err_ext", [("detail", Tstr err)])
+  | FDeleteAllAdmin ->
+    Error ("err_delete_all_admin", [])
+  | FDeleteCurrent ->
+    Error ("err_delete_logged_in", [])
   | FDeleteNotConfirmed user ->
-    Error ("Deletion of " ^ user ^ " not confirmed")
+    Error ("err_delete_unconfirmed", [("user",Tstr user)])
   | FPasswordMismatch ->
-    Error "Passwords do not match"
+    Error ("err_pw_mismatch", [])
   | FAuth Model.User ->
-    Error "Not logged in as correct user or administrator"
+    Error ("err_auth_user", [])
   | FAuth Model.Admin ->
-    Error "This operation needs administrator privleges"
+    Error ("err_auth_admin", [])
 
 let format_messages msgs =
   let open Jg_types in
   let (infos, errors) =
     List.fold_left (fun (infos, errors) msg ->
+	let fmt key data = Tobj (("key", Tstr key) :: data) in
 	match format_message msg with
-	| Info info -> (info :: infos, errors)
-	| Error err -> (infos, err :: errors))
+	| Info (key, data) -> (fmt key data :: infos, errors)
+	| Error (key, data) -> (infos, fmt key data :: errors))
       ([], []) msgs in
-  [("infos", Tlist (List.map (fun s -> Tstr s) infos));
-   ("errors", Tlist (List.map (fun s -> Tstr s) errors))]
+  [("infos", Tlist infos);
+   ("errors", Tlist errors)]
 
 let format_users users =
   let open Jg_types in
@@ -89,6 +98,7 @@ module type Strategy = sig
 
   val get_session_data: view -> string option
   val set_session_data: view -> string -> unit
+  val reset_session_data: view -> unit
 
   val output_page: view -> page_status -> string -> unit
 end
@@ -147,7 +157,7 @@ struct
   let get_admin_create_user view = get_named_argument view "user"
   let get_admin_create_pass view = get_named_argument_nullopt view "pass"
   let get_admin_create_mail view = get_named_argument_nullopt view "mail"
-  let get_admin_create_level view = get_level view "level"
+  let get_admin_create_level view = get_level view "admin"
   let get_forgot_user view = get_named_argument view "user"
   let get_forgot_token view = get_named_argument view "token"
   let get_forgot_pass1 view = get_named_argument_opt view "pass1"
@@ -204,14 +214,15 @@ struct
     in List.map (get_actions view) users |> List.flatten
 
   let format_login db msg =
-    let msg_text = match msg with
-      | NoMessage -> ""
-      | LoginFailed -> "<span class=\"failure\">Login failed!</span>"
+    let msg_data =
+      let open Jg_types in match msg with
+      | NoMessage -> Tnull
+      | LoginFailed -> Tobj [("key", Tstr "login_failed")]
       | TokenSent user ->
-	"<span class=\"info\">Password reset token sent to " ^ user ^ ".</span>"
+	Tobj [("key", Tstr "token_sent"); ("user", Tstr user)]
     in
     Template.from_file ~models:[
-      ("message", Jg_types.Tstr msg_text)
+      ("message", msg_data)
     ] "login.html"
 
   let format_admin_user db user msgs =
@@ -227,7 +238,7 @@ struct
 	("user", Jg_types.Tstr user);
 	("alt_email", match ModelImpl.user_get_email db user with
 	  | Some addr -> Jg_types.Tstr addr
-	  | None -> Jg_types.Tstr "")
+	  | None -> Jg_types.Tnull)
       ] @ format_messages msgs @ format_users users) "admin_admin.html"
 
   let format_admin db auth msgs =
@@ -245,7 +256,7 @@ struct
       ]) "forgot.html"
 
   let view_open_session = set_session_data
-  let view_close_session view = set_session_data view ""
+  let view_close_session = reset_session_data
 
   let do_output view cont =
     try output_page view StatOk (cont ())
