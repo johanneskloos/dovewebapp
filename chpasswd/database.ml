@@ -94,24 +94,35 @@ let stropt = function
   | Some t -> str t
   | None -> Sqlite3.Data.NULL
 let bool b = Sqlite3.Data.INT (if b then 1L else 0L)
+let type_string = function
+  | Sqlite3.Data.NONE -> "(none)"
+  | Sqlite3.Data.NULL -> "NULL"
+  | Sqlite3.Data.INT _ -> "an int"
+  | Sqlite3.Data.FLOAT _ -> "a float"
+  | Sqlite3.Data.TEXT _ -> "some text"
+  | Sqlite3.Data.BLOB _ -> "a blob"
+let type_error what i t =
+  raise (TypeError (Format.sprintf "Expected %s at %d, but got %s"
+		      what i (type_string t)))
+
 let get_str stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.TEXT x -> x
-  | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
+  | t -> type_error "text" idx t
 let get_int64 stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.INT x -> x
-  | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
+  | t -> type_error "int" idx t
 let get_int64opt stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.INT x -> Some x
   | Sqlite3.Data.NULL -> None
-  | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
+  | t -> type_error "int or null" idx t
 let get_stropt stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.TEXT x -> Some x
   | Sqlite3.Data.NULL -> None
-  | t -> raise (TypeError ("Expected text, got " ^ Sqlite3.Data.to_string t))
+  | t -> type_error "text or null" idx t
 let get_bool stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.INT 0L -> false
   | Sqlite3.Data.INT 1L -> true
-  | t -> raise (TypeError ("Expected bool, got " ^ Sqlite3.Data.to_string t))
+  | t -> type_error "0 or 1" idx t
 
 
 
