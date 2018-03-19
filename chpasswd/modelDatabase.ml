@@ -81,11 +81,11 @@ module Make(E: Externals) = struct
     execute_select_at_most_one db sql_retrieve_authorization
       [str sessionid; now 0.]
       (fun stmt ->
-	 let user = get_str stmt 1
-	 and admin = get_bool stmt 2
-	 in { auth_session = Some sessionid;
-	      auth_user = user;
-	      auth_level = if admin then Admin else User })
+	 let user = get_str stmt 0
+	 and admin = get_bool stmt 1 in
+	 { auth_session = Some sessionid;
+	   auth_user = user;
+	   auth_level = if admin then Admin else User })
 
   let session_from_token db ~user ~token =
     execute_select_at_most_one db sql_check_token [str user; str token; now 0.]
@@ -110,12 +110,13 @@ module Make(E: Externals) = struct
     transaction_bracket db @@
     fun db ->
     match execute_select_at_most_one db sql_retrieve_token [str user; now 0.]
-	    (fun stmt -> get_str stmt 1)
+	    (fun stmt -> get_str stmt 0)
     with
     | Some token -> token
     | None ->
       let token = E.generate_token () in
-      execute_update db sql_set_token [str token; now !Config.token_lifetime; str user];
+      execute_update db sql_set_token
+	[str token; now !Config.token_lifetime; str user];
       token
 
   let user_update_admin db session ~user ~level =
@@ -149,10 +150,10 @@ module Make(E: Externals) = struct
   let user_list db session =
     need_admin session;
     let user_collect stmt users =
-      let user_name = get_str stmt 1
-      and user_token = get_stropt stmt 2
-      and user_expires = option_map Int64.to_float (get_int64opt stmt 3)
-      and user_alt_email = get_stropt stmt 4
+      let user_name = get_str stmt 0
+      and user_token = get_stropt stmt 1
+      and user_expires = option_map Int64.to_float (get_int64opt stmt 2)
+      and user_alt_email = get_stropt stmt 3
       and user_level = if get_bool stmt 4 then Admin else User in
       { user_name; user_token; user_expires; user_alt_email;
 	user_level } :: users in
@@ -190,7 +191,7 @@ module Make(E: Externals) = struct
   let user_get_email db user =
     match
       execute_select_at_most_one db sql_get_email [str user]
-	(fun stmt -> get_stropt stmt 1)
+	(fun stmt -> get_stropt stmt 0)
     with
     | Some result -> result
     | None -> None
