@@ -1,0 +1,2 @@
+(jbuild_version 1)
+(alias ((name runtest) (deps (src/runtest))))
