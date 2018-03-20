@@ -2,6 +2,8 @@ module ExtImpl = struct
   let auth = Doveadm.auth
   let password_encode = Doveadm.password_encode
   let generate_token = Token.generate
+  let timestamp delay =
+    Int64.of_float (Sys.time () +. float_of_int delay)
 end
 
 module M = ModelDatabase.Make(ExtImpl)
