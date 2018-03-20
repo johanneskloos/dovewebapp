@@ -1,0 +1,24 @@
+opam-version: "1.2"
+name: "dovewebapp"
+version: "0.1"
+maintainer: "Johannes Kloos <jkloos@waitpermission.de>"
+author: "Johannes Kloos <jkloos@waitpermission.de>"
+homepage: "https://github.com/johanneskloos/dovewebapp"
+bug-reports: "https://github.com/johanneskloos/dovewebapp/issues"
+license: "MIT"
+dev-repo: "git+https://github.com/johanneskloos/dovewebapp"
+
+build: [
+	["jbuilder" "build" "-p" name "-j" jobs]
+]
+build-test: [
+	["jbuilder" "runtest" "-p" name "-j" jobs]
+]
+depends: [
+	"jbuilder"	{build & >= "1.0+beta18"}
+	"calendar"
+	"cryptokit"
+	"jingoo"
+	"ocamlnet"
+	"sqlite3"
+]
