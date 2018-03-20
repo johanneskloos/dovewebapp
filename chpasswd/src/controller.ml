@@ -102,7 +102,8 @@ struct
     if pass <> pass2 then
       view_admin db view session [FPasswordMismatch]
     else begin
-      ModelImpl.user_update_password db session ~user:session.auth_user ~pass;
+      ModelImpl.user_update_password
+        db session ~user:session.auth_user ~pass;
       view_admin db view session [SUpdPassword session.Model.auth_user]
     end
 
@@ -110,17 +111,21 @@ struct
     if pass <> pass2 then
       view_forgot_form db view ~user:session.Model.auth_user ~token true
     else begin
-      ModelImpl.user_update_password db session ~user:session.auth_user ~pass;
+      ModelImpl.user_update_password
+        db session ~user:session.auth_user ~pass;
       view_admin db view session [SUpdPassword session.Model.auth_user]
     end
 
   let event_admin_change_email db view session mail =
-    ModelImpl.user_update_alternative_email db session ~user:session.auth_user ~mail;
-    view_admin db view session [SUpdEMail { user = session.Model.auth_user; mail }]
+    ModelImpl.user_update_alternative_email
+      db session ~user:session.auth_user ~mail;
+    view_admin db view session
+      [SUpdEMail { user = session.Model.auth_user; mail }]
 
   let event_admin_delete db view session confirm =
     if not confirm then
-      view_admin db view session [FDeleteNotConfirmed session.Model.auth_user]
+      view_admin db view session
+        [FDeleteNotConfirmed session.Model.auth_user]
     else begin
       ModelImpl.user_delete db session session.auth_user;
       event_admin_logout db view session
@@ -129,13 +134,16 @@ struct
   let event_admin_create db view session user pass altemail level =
     match pass with
     | None ->
-      let token = ModelImpl.user_create_nopw db session ~user ~altemail ~level
+      let token = ModelImpl.user_create_nopw
+          db session ~user ~altemail ~level
       in begin match altemail with
         | Some mail ->
           Mail.send_account_email mail token;
-          view_admin db view session [SCreatedUserSentToken { user; mail; level }]
+          view_admin db view session
+            [SCreatedUserSentToken { user; mail; level }]
         | None ->
-          view_admin db view session [SCreatedUserWithToken { user; token; level }]
+          view_admin db view session
+            [SCreatedUserWithToken { user; token; level }]
       end
     | Some pass  ->
       ModelImpl.user_create_pw db session ~user ~pass ~altemail ~level;
@@ -151,7 +159,8 @@ struct
       | TaskSetAdmin { user; level } -> SUpdAdmin { user; level }
       | TaskDelete user -> SDeletedUser user
     in
-    List.iter (fun {user; token} -> send_token_email db ~user ~token) tokens;
+    List.iter (fun {user; token} -> send_token_email db ~user ~token)
+      tokens;
     view_admin db view session (List.map translate tasks)
 
   let event_admin db cgi =
@@ -170,7 +179,8 @@ struct
         event_admin_change_email db cgi session
           (validate_email_option (get_admin_chmail_mail cgi))
       | Delete ->
-        event_admin_delete db cgi session (get_admin_delete_confirm cgi)
+        event_admin_delete db cgi session
+          (get_admin_delete_confirm cgi)
       | Create ->
         event_admin_create db cgi session
           (validate_user (get_admin_create_user cgi))
@@ -178,7 +188,8 @@ struct
           (validate_email_option (get_admin_create_mail cgi))
           (get_admin_create_level cgi)
       | MassUpdate ->
-        event_admin_mass_update db cgi session (get_admin_mass_update cgi)
+        event_admin_mass_update db cgi session
+          (get_admin_mass_update cgi)
       | NoOperation ->
         view_admin db cgi session []
 

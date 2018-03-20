@@ -40,11 +40,13 @@ let prepare_cleanup db stmt cont =
 let prepare_bind_cleanup db stmt args cont =
   prepare_cleanup db stmt
     (fun db stmt ->
-       List.iteri (fun i arg -> expect_ok (Sqlite3.bind stmt (i+1) arg)) args;
+       List.iteri (fun i arg -> expect_ok (Sqlite3.bind stmt (i+1) arg))
+         args;
        cont db stmt)
 
 let execute_update db stmt args =
-  prepare_bind_cleanup db stmt args (fun db stmt -> expect_done (Sqlite3.step stmt))
+  prepare_bind_cleanup db stmt args
+    (fun db stmt -> expect_done (Sqlite3.step stmt))
 
 let execute_select db stmt args fn accu =
   let rec fold_db stmt accu =

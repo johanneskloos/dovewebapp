@@ -185,40 +185,50 @@ let test_get_admin_delete_confirm =
 let test_get_admin_create_user =
   "get_admin_create_user" >:: fun ctx ->
     assert_equal ~fmt:Fmt.string ~msg:"with" user
-      (V.get_admin_create_user request_admin_create_with_pass_mail_admin);
+      (V.get_admin_create_user
+         request_admin_create_with_pass_mail_admin);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_admin_create_user request_login_noop)
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
     assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass)
-      (V.get_admin_create_pass request_admin_create_with_pass_mail_admin);
+      (V.get_admin_create_pass
+         request_admin_create_with_pass_mail_admin);
     assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
-      (V.get_admin_create_pass request_admin_create_without_pass_mail_user)
+      (V.get_admin_create_pass
+         request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_mail =
   "get_create_mail" >:: fun ctx ->
     assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some mail)
-      (V.get_admin_create_mail request_admin_create_with_pass_mail_admin);
+      (V.get_admin_create_mail
+         request_admin_create_with_pass_mail_admin);
     assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
-      (V.get_admin_create_mail request_admin_create_without_pass_mail_user)
+      (V.get_admin_create_mail
+         request_admin_create_without_pass_mail_user)
 
-let level_to_string = Model.(function Admin -> "admin" | User -> "user")
+let level_to_string =
+  Model.(function Admin -> "admin" | User -> "user")
 let pp_level = Fmt.of_to_string level_to_string
 
 let test_get_admin_create_level =
   "get_create_level" >:: fun ctx ->
     assert_equal ~fmt:pp_level ~msg:"with" Model.Admin
-      (V.get_admin_create_level request_admin_create_with_pass_mail_admin);
+      (V.get_admin_create_level
+         request_admin_create_with_pass_mail_admin);
     assert_equal ~fmt:pp_level ~msg:"without" Model.User
-      (V.get_admin_create_level request_admin_create_without_pass_mail_user)
+      (V.get_admin_create_level
+         request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
     assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass)
-      (V.get_admin_create_pass request_admin_create_with_pass_mail_admin);
+      (V.get_admin_create_pass
+         request_admin_create_with_pass_mail_admin);
     assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
-      (V.get_admin_create_pass request_admin_create_without_pass_mail_user)
+      (V.get_admin_create_pass
+         request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_pass1 =
   "get_create_pass1" >:: fun ctx ->
@@ -281,12 +291,14 @@ let test_view_open_session =
     let view = make [] in
     assert_equal ~fmt:Fmt.(option string) None view.session;
     V.view_open_session view session_id;
-    assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session
+    assert_equal ~fmt:Fmt.(option string)
+      (Some session_id) view.session
 
 let test_view_close_session =
   "view_close_session" >:: fun ctx ->
     let view = make ~session:session_id [] in
-    assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session;
+    assert_equal ~fmt:Fmt.(option string)
+      (Some session_id) view.session;
     V.view_close_session view;
     assert_equal ~fmt:Fmt.(option string) None view.session
 
@@ -316,7 +328,8 @@ let test_view_login =
     output_string chan login_template;
     close_out chan;
     V.view_login model view View.NoMessage;
-    assert_equal ~fmt:Fmt.(option string) (Some "nothing") view.page_body
+    assert_equal ~fmt:Fmt.(option string)
+      (Some "nothing") view.page_body
 
 let test_view_login_token_sent =
   "view_login, token sent" >:: fun ctx ->
@@ -327,7 +340,8 @@ let test_view_login_token_sent =
     output_string chan login_template;
     close_out chan;
     V.view_login model view (View.TokenSent user);
-    assert_equal ~fmt:Fmt.(option string) (Some ("forgot:" ^ user)) view.page_body
+    assert_equal ~fmt:Fmt.(option string)
+      (Some ("forgot:" ^ user)) view.page_body
 
 let test_view_login_failed =
   "view_login, login failed" >:: fun ctx ->
@@ -338,20 +352,25 @@ let test_view_login_failed =
     output_string chan login_template;
     close_out chan;
     V.view_login model view View.LoginFailed;
-    assert_equal ~fmt:Fmt.(option string) (Some ("login_failed")) view.page_body
+    assert_equal ~fmt:Fmt.(option string)
+      (Some ("login_failed")) view.page_body
 
 let admin_user_template =
-  "user={{user}};email={% if alt_email is undefined%}(none){%else%}{{alt_email}}{% endif %};" ^
+  "user={{user}};email={% if alt_email is undefined%}(none)" ^
+  "{%else%}{{alt_email}}{% endif %};" ^
   "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
   "{%for msg in errors%}error:{{msg.key}};{%endfor%}" 
 let admin_admin_template =
-  "user={{user}};email={% if alt_email is undefined%}(none){%else%}{{alt_email}}{% endif %};" ^
+  "user={{user}};email={% if alt_email is undefined%}(none)" ^
+  "{%else%}{{alt_email}}{% endif %};" ^
   "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
   "{%for msg in errors%}error:{{msg.key}};{%endfor%}" ^
   "{%for user in users%}user:{{user.user}};{%endfor%}"
 
-let expected_view_admin_user_all_messages = "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;"
-let expected_view_admin_admin_all_messages = "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;user:bar;user:foo;"
+let expected_view_admin_user_all_messages =
+  "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;"
+let expected_view_admin_admin_all_messages =
+  "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;user:bar;user:foo;"
 
 let test_view_admin_user_all_messages =
   "view_admin, user" >:: fun ctx ->
@@ -435,16 +454,19 @@ let test_view_forgot_form =
       (Some expected_view_forgot_form) view.page_body
 
 let tests = "ViewWeb" >:::
-            [ test_get_login_operation; test_get_login_user; test_get_login_pass;
-              test_get_admin_sessionid; test_get_admin_operation;
-              test_get_admin_chpass_pass1; test_get_admin_chpass_pass2;
-              test_get_admin_chmail_mail; test_get_admin_delete_confirm;
+            [ test_get_login_operation; test_get_login_user;
+              test_get_login_pass; test_get_admin_sessionid;
+              test_get_admin_operation; test_get_admin_chpass_pass1;
+              test_get_admin_chpass_pass2; test_get_admin_chmail_mail;
+              test_get_admin_delete_confirm;
               test_get_admin_create_user; test_get_admin_create_pass;
               test_get_admin_create_mail; test_get_admin_create_level;
               test_get_admin_create_pass; test_get_admin_create_pass1;
               test_get_admin_create_pass2; test_get_forgot_user;
-              test_get_forgot_token; test_get_admin_mass_update; test_view_open_session;
-              test_view_close_session; test_view_login; test_view_login_token_sent;
+              test_get_forgot_token; test_get_admin_mass_update;
+              test_view_open_session; test_view_close_session;
+              test_view_login; test_view_login_token_sent;
               test_view_login_failed; test_view_admin_user_all_messages;
-              test_view_admin_admin_all_messages; test_view_forgot_form ]
+              test_view_admin_admin_all_messages;
+              test_view_forgot_form ]
 

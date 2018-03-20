@@ -22,7 +22,8 @@ type admin_messages =
 
 type login_operation = Login | Forgot | NoOperation
 type admin_operation =
-    Logout | SetPass | SetMail | Delete | Create | MassUpdate | NoOperation
+    Logout | SetPass | SetMail | Delete | Create | MassUpdate
+  | NoOperation
 
 module type S = sig
   type model
@@ -48,6 +49,8 @@ module type S = sig
   val view_open_session: view -> string -> unit
   val view_close_session: view -> unit
   val view_login: model -> view -> login_messages -> unit
-  val view_admin: model -> view -> Model.authdata -> admin_messages list -> unit
-  val view_forgot_form: model -> view -> user:string -> token:string -> bool -> unit
+  val view_admin:
+    model -> view -> Model.authdata -> admin_messages list -> unit
+  val view_forgot_form:
+    model -> view -> user:string -> token:string -> bool -> unit
 end

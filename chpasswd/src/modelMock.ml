@@ -30,8 +30,10 @@ let session_login db ~user ~pass =
     if (Some pass <> password) then None
     else
       let session_id = find_fresh_key db.db_sessions in
-      let session_data = { username = user; expires = !current_time +. 300. } in
-      db.db_sessions <- StringMap.add session_id session_data db.db_sessions;
+      let session_data =
+        { username = user; expires = !current_time +. 300. } in
+      db.db_sessions <-
+        StringMap.add session_id session_data db.db_sessions;
       Some session_id
   with Not_found -> None
 
@@ -62,7 +64,8 @@ let session_from_token db ~user ~token =
 let update_user_if_exists db user fn =
   try
     let users = db.db_users in
-    db.db_users <- StringMap.add user (fn (StringMap.find user users)) users
+    db.db_users <-
+      StringMap.add user (fn (StringMap.find user users)) users
   with Not_found -> ()
 
 let user_update_password db session ~user ~pass =
@@ -92,8 +95,9 @@ let user_create_token db user =
 let user_update_admin db session ~user ~level =
   need_admin session;
   update_user_if_exists db user
-    (fun data -> { data with
-                   admin = match level with Admin -> true | User -> false })
+    (fun data ->
+       { data with
+         admin = match level with Admin -> true | User -> false })
 
 let user_delete_token db session user =
   need_admin session;
@@ -102,17 +106,19 @@ let user_delete_token db session user =
 let user_create_nopw db session ~user ~altemail ~level =
   need_admin session;
   let token = mktoken user in
-  let data = { password = None; token = Some token;
-               alternative_email = altemail;
-               admin = match level with Admin -> true | User -> false } in
+  let data =
+    { password = None; token = Some token;
+      alternative_email = altemail;
+      admin = match level with Admin -> true | User -> false } in
   db.db_users <- StringMap.add user data db.db_users;
   fst token
 
 let user_create_pw db session ~user ~pass ~altemail ~level =
   need_admin session;
-  let data = { password = Some pass; token = None;
-               alternative_email = altemail;
-               admin = match level with Admin -> true | User -> false } in
+  let data =
+    { password = Some pass; token = None;
+      alternative_email = altemail;
+      admin = match level with Admin -> true | User -> false } in
   db.db_users <- StringMap.add user data db.db_users
 
 let user_list db session =

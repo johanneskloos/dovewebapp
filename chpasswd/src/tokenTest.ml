@@ -28,5 +28,6 @@ let token_unique_test =
 
 let tests =
   let open OUnit2 in
-  "Token" >::: [QCheck_runner.to_ounit_test token_format_test_qc |> OUnit.ounit2_of_ounit1;
+  "Token" >::: [QCheck_runner.to_ounit_test token_format_test_qc
+                |> OUnit.ounit2_of_ounit1;
                 token_unique_test]

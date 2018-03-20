@@ -11,8 +11,8 @@ let sql_delete_session =
   "DELETE FROM sessions WHERE sessionid = ?"
 
 let sql_retrieve_authorization =
-  "SELECT users.username, users.admin FROM users, sessions " ^
-  "WHERE users.username = sessions.username AND sessions.sessionid = ? " ^
+  "SELECT users.username, users.admin FROM users, sessions WHERE " ^
+  "users.username = sessions.username AND sessions.sessionid = ? " ^
   "AND sessions.session_expires >= ?"
 let sql_check_token =
   "SELECT 1 FROM users WHERE username = ? AND token = ? " ^
@@ -31,14 +31,16 @@ let sql_set_admin =
 let sql_set_token =
   "UPDATE users SET token = ?, token_expires = ? WHERE username = ?"
 let sql_delete_token =
-  "UPDATE users SET token = NULL, token_expires = NULL WHERE username = ?"
+  "UPDATE users SET token = NULL, token_expires = NULL " ^
+  "WHERE username = ?"
 
 let sql_delete_user = "DELETE FROM users WHERE username = ?"
 let sql_insert_user_password =
   "INSERT INTO users (username, password, alternative_email, admin) " ^
   "VALUES (?, ?, ?, ?)"
 let sql_insert_user_token =
-  "INSERT INTO users (username, token, alternative_email, admin, token_expires) " ^
+  "INSERT INTO users " ^
+  "(username, token, alternative_email, admin, token_expires) " ^
   "VALUES (?, ?, ?, ?, ?)"
 
 let sql_list_users =
@@ -54,7 +56,8 @@ let sql_get_email =
 
 module type Externals = sig
   val auth: user:string -> pass:string -> bool
-  val password_encode: user:string -> pass:string -> (string, string) result
+  val password_encode:
+    user:string -> pass:string -> (string, string) result
   val generate_token: unit -> string
   val timestamp: int -> int64
 end
@@ -89,7 +92,8 @@ module Make(E: Externals) = struct
            auth_level = if admin then Admin else User })
 
   let session_from_token db ~user ~token =
-    execute_select_at_most_one db sql_check_token [str user; str token; now 0]
+    execute_select_at_most_one db sql_check_token
+      [str user; str token; now 0]
       (fun _ ->
          { auth_session = None; auth_user = user; auth_level = User })
 
@@ -110,7 +114,8 @@ module Make(E: Externals) = struct
   let user_create_token db user =
     transaction_bracket db @@
     fun db ->
-    match execute_select_at_most_one db sql_retrieve_token [str user; now 0]
+    match execute_select_at_most_one db sql_retrieve_token
+            [str user; now 0]
             (fun stmt -> get_str stmt 0)
     with
     | Some token -> token
@@ -134,7 +139,8 @@ module Make(E: Externals) = struct
     let is_admin = match level with User -> false | Admin -> true
     and token = E.generate_token () in
     execute_update db sql_insert_user_token
-      [str user; str token; stropt altemail; bool is_admin; now Config.(get token_lifetime)];
+      [str user; str token; stropt altemail; bool is_admin;
+       now Config.(get token_lifetime)];
     token
 
   let user_create_pw db session ~user ~pass ~altemail ~level =
@@ -153,7 +159,8 @@ module Make(E: Externals) = struct
     let user_collect stmt users =
       let user_name = get_str stmt 0
       and user_token = get_stropt stmt 1
-      and user_expires = option_map Int64.to_float (get_int64opt stmt 2)
+      and user_expires =
+        option_map Int64.to_float (get_int64opt stmt 2)
       and user_alt_email = get_stropt stmt 3
       and user_level = if get_bool stmt 4 then Admin else User in
       { user_name; user_token; user_expires; user_alt_email;

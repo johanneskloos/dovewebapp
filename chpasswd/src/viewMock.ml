@@ -1,8 +1,13 @@
 module Make(ModelImpl: Model.S): sig
   type history_item =
       Login of { model: ModelImpl.db; message: View.login_messages }
-    | Admin of { model: ModelImpl.db; session: Model.authdata; messages: View.admin_messages list }
-    | Forgot of { model: ModelImpl.db; user: string; token: string; badpw: bool }
+    | Admin of { model: ModelImpl.db;
+                 session: Model.authdata;
+                 messages: View.admin_messages list }
+    | Forgot of { model: ModelImpl.db;
+                  user: string;
+                  token: string;
+                  badpw: bool }
   type viewstate = {
     mutable login_operation: View.login_operation;
     mutable login_user: string option;
@@ -24,7 +29,8 @@ module Make(ModelImpl: Model.S): sig
     mutable session: string option;
     mutable history: history_item list
   }
-  include View.S with type model = ModelImpl.db and type view = viewstate
+  include View.S with type model = ModelImpl.db
+                  and type view = viewstate
   val make:
     ?login_operation:View.login_operation ->
     ?login_user:string ->
@@ -53,8 +59,10 @@ struct
   type model = ModelImpl.db
   type history_item =
       Login of { model: model; message: login_messages }
-    | Admin of { model: model; session: authdata; messages: admin_messages list }
-    | Forgot of { model: model; user: string; token: string; badpw: bool }
+    | Admin of { model: model; session: authdata;
+                 messages: admin_messages list }
+    | Forgot of { model: model; user: string; token: string;
+                  badpw: bool }
 
   type viewstate = {
     mutable login_operation: login_operation;
@@ -87,14 +95,21 @@ struct
   let get_login_pass { login_pass } = get login_pass
   let get_admin_sessionid { session } = get session
   let get_admin_operation { admin_operation } = admin_operation
-  let get_admin_chpass_pass1 { admin_chpass_pass1 } = get admin_chpass_pass1
-  let get_admin_chpass_pass2 { admin_chpass_pass2 } = get admin_chpass_pass2
+  let get_admin_chpass_pass1 { admin_chpass_pass1 } =
+    get admin_chpass_pass1
+  let get_admin_chpass_pass2 { admin_chpass_pass2 } =
+    get admin_chpass_pass2
   let get_admin_chmail_mail { admin_chmail_mail } = admin_chmail_mail
-  let get_admin_delete_confirm { admin_delete_confirm } = admin_delete_confirm
-  let get_admin_create_user { admin_create_user } = get admin_create_user
-  let get_admin_create_pass { admin_create_pass } = admin_create_pass
-  let get_admin_create_mail { admin_create_mail } = admin_create_mail
-  let get_admin_create_level { admin_create_level } = admin_create_level
+  let get_admin_delete_confirm { admin_delete_confirm } =
+    admin_delete_confirm
+  let get_admin_create_user { admin_create_user } =
+    get admin_create_user
+  let get_admin_create_pass { admin_create_pass } =
+    admin_create_pass
+  let get_admin_create_mail { admin_create_mail } =
+    admin_create_mail
+  let get_admin_create_level { admin_create_level } =
+    admin_create_level
   let get_admin_mass_update { admin_mass_update } = admin_mass_update
   let get_forgot_user { forgot_user } = get forgot_user
   let get_forgot_token { forgot_token } = get forgot_token
@@ -105,9 +120,11 @@ struct
   let view_login model view message =
     view.history <- Login { model; message } :: view.history
   let view_admin model view session messages =
-    view.history <- Admin { model; session; messages } :: view.history
+    view.history <-
+      Admin { model; session; messages } :: view.history
   let view_forgot_form model view ~user ~token badpw =
-    view.history <- Forgot { model; user; token; badpw } :: view.history
+    view.history <-
+      Forgot { model; user; token; badpw } :: view.history
   let make
       ?(login_operation=(NoOperation: login_operation))
       ?login_user ?login_pass

@@ -6,19 +6,25 @@ let password_encode_impl ~user ~pass =
       output_string cin (pass ^ "\n")
     done;
     flush cin;
-    let result = try Ok (input_line cout) with End_of_file -> Error (input_line cerr)
+    let result =
+      try Ok (input_line cout)
+      with End_of_file -> Error (input_line cerr)
     in match Unix.close_process_full (cout, cin, cerr) with
     | Unix.WEXITED 0 -> result
     | Unix.WSIGNALED signal | Unix.WSTOPPED signal ->
       Error (Format.sprintf "doveadm killed by signal %d" signal)
     | Unix.WEXITED status -> match result with
-      | Ok _ -> Error (Format.sprintf "doveadm exited with %d" status)
-      | Error e -> Error (Format.sprintf "doveadm exited with %d, %s" status e)
+      | Ok _ ->
+        Error (Format.sprintf "doveadm exited with %d" status)
+      | Error e ->
+        Error (Format.sprintf "doveadm exited with %d, %s" status e)
   with e -> ignore (Unix.close_process_full (cout, cin, cerr)); raise e
 
 let is_bad str =
   try
-    String.iter (function '\x00' | '\r' | '\n' -> raise Exit | _ -> ()) str;
+    String.iter
+      (function '\x00' | '\r' | '\n' -> raise Exit | _ -> ())
+      str;
     false
   with Exit -> true
 
@@ -48,7 +54,8 @@ let auth_impl ~user ~pass =
     match Unix.close_process_out cin with
     | Unix.WEXITED 0 -> true
     | Unix.WEXITED 77 -> false
-    | Unix.WEXITED s -> failwith (Format.sprintf "doveadm exited with %d" s)
+    | Unix.WEXITED s ->
+      failwith (Format.sprintf "doveadm exited with %d" s)
     | Unix.WSIGNALED s | Unix.WSTOPPED s ->
       failwith (Format.sprintf "doveadm killed with signal %d" s)
   with e -> ignore (Unix.close_process_out cin); raise e

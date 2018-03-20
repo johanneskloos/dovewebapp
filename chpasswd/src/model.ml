@@ -35,22 +35,26 @@ module type S = sig
   val session_login : db -> user:string -> pass:string -> string option
   val session_logout : db -> authdata -> unit
   val session_retrieve : db -> string -> authdata option
-  val session_from_token : db -> user:string -> token:string -> authdata option
+  val session_from_token :
+    db -> user:string -> token:string -> authdata option
   val user_update_password :
     db -> authdata -> user:string -> pass:string -> unit
   val user_update_alternative_email :
     db -> authdata -> user:string -> mail:string option -> unit
   val user_delete : db -> authdata -> string -> unit
   val user_create_token : db -> string -> string
-  val user_update_admin : db -> authdata -> user:string -> level:level -> unit
+  val user_update_admin :
+    db -> authdata -> user:string -> level:level -> unit
   val user_delete_token : db -> authdata -> string -> unit
   val user_create_nopw :
     db ->
-    authdata -> user:string -> altemail:string option -> level:level -> string
+    authdata ->
+    user:string -> altemail:string option -> level:level -> string
   val user_create_pw :
     db ->
     authdata ->
-    user:string -> pass:string -> altemail:string option -> level:level -> unit
+    user:string ->
+    pass:string -> altemail:string option -> level:level -> unit
   val user_list : db -> authdata -> user_entry list
   val expire : db -> unit
 

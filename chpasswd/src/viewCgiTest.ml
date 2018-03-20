@@ -62,16 +62,20 @@ let test_get_named_argument_opt =
     and field2 = "bar"
     and outbuf = Buffer.create 1024 in
     let view = make_cgi [(field1, value)] outbuf in
-    assert_equal ~fmt:Fmt.(option string) (Some value) (get_named_argument_opt view field1);
-    assert_equal ~fmt:Fmt.(option string) None (get_named_argument_opt view field2)
+    assert_equal ~fmt:Fmt.(option string)
+      (Some value) (get_named_argument_opt view field1);
+    assert_equal ~fmt:Fmt.(option string)
+      None (get_named_argument_opt view field2)
 
 let test_get_session_data =
   "get_session_data" >:: fun ctx ->
     let value = "xyz"
     and outbuf = Buffer.create 10 in
     assert_equal ~fmt:Fmt.(option string) (Some value)
-      (get_session_data (make_cgi ~cookies:[("session", value)] [] outbuf));
-    assert_equal ~fmt:Fmt.(option string) None (get_session_data (make_cgi [] outbuf))
+      (get_session_data (make_cgi ~cookies:[("session", value)]
+                           [] outbuf));
+    assert_equal ~fmt:Fmt.(option string) None
+      (get_session_data (make_cgi [] outbuf))
 
 let extract buf =
   let (header, _) as msg =
@@ -102,10 +106,12 @@ let test_output_page_ok_no_cookie =
     and body = "blah" in
     output_page view ViewWeb.StatOk body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string "200" (String.sub (header # field "Status") 0 3);
+    assert_equal ~fmt:Fmt.string
+      "200" (String.sub (header # field "Status") 0 3);
     assert_equal ~fmt:Fmt.string body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string "text/html" (fst (get_content_type header));
+    assert_equal ~fmt:Fmt.string
+      "text/html" (fst (get_content_type header));
     assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
     assert_equal ~fmt:Fmt.(option string) None view.set_session
@@ -120,10 +126,12 @@ let test_output_page_ok_cookie =
     view.set_session <- Some session;
     output_page view ViewWeb.StatOk body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string "200" (String.sub (header # field "Status") 0 3);
+    assert_equal ~fmt:Fmt.string
+      "200" (String.sub (header # field "Status") 0 3);
     assert_equal ~fmt:Fmt.string body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string "text/html" (fst (get_content_type header));
+    assert_equal ~fmt:Fmt.string
+      "text/html" (fst (get_content_type header));
     assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
       [mkcookie "session" session] (get_set_cookie header);
     assert_equal ~fmt:Fmt.(option string) None view.set_session
@@ -135,10 +143,12 @@ let test_output_page_auth =
     and body = "blah" in
     output_page view ViewWeb.StatAuth body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string "401" (String.sub (header # field "Status") 0 3);
+    assert_equal ~fmt:Fmt.string
+      "401" (String.sub (header # field "Status") 0 3);
     assert_equal ~fmt:Fmt.string body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string "text/html" (fst (get_content_type header));
+    assert_equal ~fmt:Fmt.string
+      "text/html" (fst (get_content_type header));
     assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
     assert_equal ~fmt:Fmt.(option string) None view.set_session
@@ -150,10 +160,12 @@ let test_output_page_err =
     and body = "blah" in
     output_page view ViewWeb.StatError body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string "500" (String.sub (header # field "Status") 0 3);
+    assert_equal ~fmt:Fmt.string
+      "500" (String.sub (header # field "Status") 0 3);
     assert_equal ~fmt:Fmt.string body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string "text/html" (fst (get_content_type header));
+    assert_equal ~fmt:Fmt.string
+      "text/html" (fst (get_content_type header));
     assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
     assert_equal ~fmt:Fmt.(option string) None view.set_session
