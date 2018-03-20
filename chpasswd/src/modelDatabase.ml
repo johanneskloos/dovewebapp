@@ -56,12 +56,12 @@ module type Externals = sig
   val auth: user:string -> pass:string -> bool
   val password_encode: user:string -> pass:string -> (string, string) result
   val generate_token: unit -> string
+  val timestamp: int -> int64
 end
 
 module Make(E: Externals) = struct
   type db = Database.db
-  let now delay =
-    Sqlite3.Data.INT (Int64.of_float (Sys.time() +. delay))
+  let now delay = Sqlite3.Data.INT (E.timestamp delay)
 
   let session_login db ~user ~pass =
     if E.auth ~user ~pass then
@@ -80,7 +80,7 @@ module Make(E: Externals) = struct
 
   let session_retrieve db sessionid =
     execute_select_at_most_one db sql_retrieve_authorization
-      [str sessionid; now 0.]
+      [str sessionid; now 0]
       (fun stmt ->
 	 let user = get_str stmt 0
 	 and admin = get_bool stmt 1 in
@@ -89,7 +89,7 @@ module Make(E: Externals) = struct
 	   auth_level = if admin then Admin else User })
 
   let session_from_token db ~user ~token =
-    execute_select_at_most_one db sql_check_token [str user; str token; now 0.]
+    execute_select_at_most_one db sql_check_token [str user; str token; now 0]
       (fun _ ->
 	 { auth_session = None; auth_user = user; auth_level = User })
 
@@ -110,7 +110,7 @@ module Make(E: Externals) = struct
   let user_create_token db user =
     transaction_bracket db @@
     fun db ->
-    match execute_select_at_most_one db sql_retrieve_token [str user; now 0.]
+    match execute_select_at_most_one db sql_retrieve_token [str user; now 0]
 	    (fun stmt -> get_str stmt 0)
     with
     | Some token -> token
@@ -161,8 +161,8 @@ module Make(E: Externals) = struct
     execute_select db sql_list_users [] user_collect [] |> List.rev
 
   let expire db =
-    execute_update db sql_expire_sessions [now 0.];
-    execute_update db sql_expire_tokens [now 0.]
+    execute_update db sql_expire_sessions [now 0];
+    execute_update db sql_expire_tokens [now 0]
 
   let user_task_run db session tasks =
     need_admin session;
