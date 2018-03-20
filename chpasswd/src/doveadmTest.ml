@@ -35,7 +35,8 @@ let test_password_encode_4 =
 
 (* Tests for auth are surprisingly difficult to set up, don't do it here. *)
 
-let tests = "Doveadm tests" >::: [
+let tests =
+  "Doveadm tests" >::: [
     test_password_encode_1;
     test_password_encode_2;
     test_password_encode_3;

@@ -171,7 +171,8 @@ let test_output_page_err =
     assert_equal ~fmt:Fmt.(option string) None view.set_session
 
 
-let tests = "ViewCgi" >:::
-            [test_get_named_argument_opt; test_get_session_data;
-             test_output_page_ok_no_cookie; test_output_page_ok_cookie;
-             test_output_page_auth; test_output_page_err ]
+let tests =
+  "ViewCgi" >:::
+  [test_get_named_argument_opt; test_get_session_data;
+   test_output_page_ok_no_cookie; test_output_page_ok_cookie;
+   test_output_page_auth; test_output_page_err ]

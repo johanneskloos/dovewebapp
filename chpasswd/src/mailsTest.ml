@@ -64,4 +64,5 @@ let test_new_mail =
     check_mails "user@example.net" "Your new account"
       "new" "setpw://xyz"
 
-let tests = "Mails" >:::  [test_token_nomail; test_token_mail; test_new_mail]
+let tests =
+  "Mails" >::: [test_token_nomail; test_token_mail; test_new_mail]

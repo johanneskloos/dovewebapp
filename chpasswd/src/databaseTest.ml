@@ -238,17 +238,18 @@ let test_transaction_bracket_fail_inner =
                 transaction_bracket db setup_data_for_select));
        assert_database_empty db)
 
-let tests = "Database" >:::
-            [test_execute_update; test_execute_update_fail;
-             test_execute_update_bind; (*test_execute_update_too_few_args;*)
-             test_execute_update_too_many_args; test_execute_select;
-             test_execute_select_bind; (*test_execute_select_too_few_args;*)
-             test_execute_select_too_many_args;
-             test_execute_select_at_most_one_zero;
-             test_execute_select_at_most_one_one;
-             test_execute_select_at_most_one_more;
-             test_execute_select_one_zero;
-             test_execute_select_one_one; test_execute_select_one_more;
-             test_transaction_bracket_sucess;
-             test_transaction_bracket_fail;
-             test_transaction_bracket_fail_inner]
+let tests =
+  "Database" >:::
+  [test_execute_update; test_execute_update_fail;
+   test_execute_update_bind; (*test_execute_update_too_few_args;*)
+   test_execute_update_too_many_args; test_execute_select;
+   test_execute_select_bind; (*test_execute_select_too_few_args;*)
+   test_execute_select_too_many_args;
+   test_execute_select_at_most_one_zero;
+   test_execute_select_at_most_one_one;
+   test_execute_select_at_most_one_more;
+   test_execute_select_one_zero;
+   test_execute_select_one_one; test_execute_select_one_more;
+   test_transaction_bracket_sucess;
+   test_transaction_bracket_fail;
+   test_transaction_bracket_fail_inner]

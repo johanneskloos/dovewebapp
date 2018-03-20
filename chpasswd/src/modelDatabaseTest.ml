@@ -727,43 +727,44 @@ let test_user_get_email_no_such_user =
        assert_equal ~fmt:Fmt.(option string)
          None (M.user_get_email db "foo"))
 
-let tests = "ModelDatabase" >:::
-            [ test_session_login_success; test_session_login_fail;
-              test_session_logout; test_session_logout_diff_sid;
-              test_session_logout_no_sid; test_session_retrieve;
-              test_session_retrieve_2; test_session_no_session;
-              test_session_no_user; test_session_from_token;
-              test_session_from_token_expired;
-              test_session_from_token_wrong_token;
-              test_session_from_token_wrong_user;
-              test_session_from_token_no_token;
-              test_user_update_password_user;
-              test_user_update_password_user_reset_token;
-              test_user_update_password_admin;
-              test_user_update_password_nonexistant_user;
-              test_user_update_password_wrong_user;
-              test_user_update_password_bad_password;
-              test_user_update_alternative_email_user;
-              test_user_update_alternative_email_user_from_none;
-              test_user_update_alternative_email_user_to_unset;
-              test_user_update_alternative_email_nonexistant_user;
-              test_user_update_alternative_email_wrong_user;
-              test_user_delete; test_user_delete_admin;
-              test_user_delete_wrong_user; test_user_create_token;
-              test_user_create_token_expired;
-              test_user_create_token_reuse;
-              test_user_update_admin_user;
-              test_user_update_admin_admin;
-              test_user_update_admin_nonexistant_user;
-              test_user_update_admin_wrong_user;
-              test_user_delete_token_user;
-              test_user_delete_token_admin;
-              test_user_create_nopw_user;
-              test_user_create_nopw_admin;
-              test_user_create_nopw_admin_dup;
-              test_user_create_pw_user; test_user_create_pw_admin;
-              test_user_create_pw_admin_dup;
-              test_user_create_pw_admin_bad_pass;
-              test_user_list_user; test_user_list_admin;
-              test_user_get_email; test_user_get_email_none;
-              test_user_get_email_no_such_user ]
+let tests =
+  "ModelDatabase" >:::
+  [ test_session_login_success; test_session_login_fail;
+    test_session_logout; test_session_logout_diff_sid;
+    test_session_logout_no_sid; test_session_retrieve;
+    test_session_retrieve_2; test_session_no_session;
+    test_session_no_user; test_session_from_token;
+    test_session_from_token_expired;
+    test_session_from_token_wrong_token;
+    test_session_from_token_wrong_user;
+    test_session_from_token_no_token;
+    test_user_update_password_user;
+    test_user_update_password_user_reset_token;
+    test_user_update_password_admin;
+    test_user_update_password_nonexistant_user;
+    test_user_update_password_wrong_user;
+    test_user_update_password_bad_password;
+    test_user_update_alternative_email_user;
+    test_user_update_alternative_email_user_from_none;
+    test_user_update_alternative_email_user_to_unset;
+    test_user_update_alternative_email_nonexistant_user;
+    test_user_update_alternative_email_wrong_user;
+    test_user_delete; test_user_delete_admin;
+    test_user_delete_wrong_user; test_user_create_token;
+    test_user_create_token_expired;
+    test_user_create_token_reuse;
+    test_user_update_admin_user;
+    test_user_update_admin_admin;
+    test_user_update_admin_nonexistant_user;
+    test_user_update_admin_wrong_user;
+    test_user_delete_token_user;
+    test_user_delete_token_admin;
+    test_user_create_nopw_user;
+    test_user_create_nopw_admin;
+    test_user_create_nopw_admin_dup;
+    test_user_create_pw_user; test_user_create_pw_admin;
+    test_user_create_pw_admin_dup;
+    test_user_create_pw_admin_bad_pass;
+    test_user_list_user; test_user_list_admin;
+    test_user_get_email; test_user_get_email_none;
+    test_user_get_email_no_such_user ]

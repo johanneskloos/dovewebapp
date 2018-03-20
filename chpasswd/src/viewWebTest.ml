@@ -453,20 +453,21 @@ let test_view_forgot_form =
     assert_equal ~fmt:Fmt.(option string)
       (Some expected_view_forgot_form) view.page_body
 
-let tests = "ViewWeb" >:::
-            [ test_get_login_operation; test_get_login_user;
-              test_get_login_pass; test_get_admin_sessionid;
-              test_get_admin_operation; test_get_admin_chpass_pass1;
-              test_get_admin_chpass_pass2; test_get_admin_chmail_mail;
-              test_get_admin_delete_confirm;
-              test_get_admin_create_user; test_get_admin_create_pass;
-              test_get_admin_create_mail; test_get_admin_create_level;
-              test_get_admin_create_pass; test_get_admin_create_pass1;
-              test_get_admin_create_pass2; test_get_forgot_user;
-              test_get_forgot_token; test_get_admin_mass_update;
-              test_view_open_session; test_view_close_session;
-              test_view_login; test_view_login_token_sent;
-              test_view_login_failed; test_view_admin_user_all_messages;
-              test_view_admin_admin_all_messages;
-              test_view_forgot_form ]
+let tests =
+  "ViewWeb" >:::
+  [ test_get_login_operation; test_get_login_user;
+    test_get_login_pass; test_get_admin_sessionid;
+    test_get_admin_operation; test_get_admin_chpass_pass1;
+    test_get_admin_chpass_pass2; test_get_admin_chmail_mail;
+    test_get_admin_delete_confirm;
+    test_get_admin_create_user; test_get_admin_create_pass;
+    test_get_admin_create_mail; test_get_admin_create_level;
+    test_get_admin_create_pass; test_get_admin_create_pass1;
+    test_get_admin_create_pass2; test_get_forgot_user;
+    test_get_forgot_token; test_get_admin_mass_update;
+    test_view_open_session; test_view_close_session;
+    test_view_login; test_view_login_token_sent;
+    test_view_login_failed; test_view_admin_user_all_messages;
+    test_view_admin_admin_all_messages;
+    test_view_forgot_form ]
 
