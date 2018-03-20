@@ -159,8 +159,7 @@ module Make(E: Externals) = struct
     let user_collect stmt users =
       let user_name = get_str stmt 0
       and user_token = get_stropt stmt 1
-      and user_expires =
-        option_map Int64.to_float (get_int64opt stmt 2)
+      and user_expires = get_int64opt stmt 2
       and user_alt_email = get_stropt stmt 3
       and user_level = if get_bool stmt 4 then Admin else User in
       { user_name; user_token; user_expires; user_alt_email;

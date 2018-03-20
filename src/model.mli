@@ -11,7 +11,7 @@ val need_admin: authdata -> unit
 type user_entry = {
   user_name : string;
   user_token : string option;
-  user_expires : float option;
+  user_expires : int64 option;
   user_alt_email : string option;
   user_level : level;
 }

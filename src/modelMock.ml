@@ -2,12 +2,12 @@ open Model
 module StringMap = Map.Make(String)
 type user_data = {
   password: string option;
-  token: (string * float) option;
+  token: (string * int64) option;
   alternative_email: string option;
   admin: bool
 }
 type session = {
-  expires: float;
+  expires: int64;
   username: string
 }
 type database = {
@@ -16,7 +16,7 @@ type database = {
 }
 type db = database
 
-let current_time = ref 0.
+let current_time = ref 0L
 
 let find_fresh_key map =
   let rec probe i =
@@ -31,7 +31,7 @@ let session_login db ~user ~pass =
     else
       let session_id = find_fresh_key db.db_sessions in
       let session_data =
-        { username = user; expires = !current_time +. 300. } in
+        { username = user; expires = Int64.add (!current_time) 300L } in
       db.db_sessions <-
         StringMap.add session_id session_data db.db_sessions;
       Some session_id
@@ -83,8 +83,8 @@ let user_delete db session user =
   db.db_users <- StringMap.remove user db.db_users
 
 let mktoken user =
-  (Digest.(to_hex (string (user ^ string_of_float !current_time))),
-   !current_time +. 500.)
+  (Digest.(to_hex (string (user ^ Int64.to_string !current_time))),
+   Int64.add !current_time 500L)
 
 let user_create_token db user =
   let token = mktoken user in

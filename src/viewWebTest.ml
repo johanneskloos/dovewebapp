@@ -307,7 +307,7 @@ let user_data =
               alternative_email = Some mail; admin = true }
 let user2 = "bar"
 let user2_data =
-  ModelMock.{ password = Some pass2; token = Some (session_id, 1.0);
+  ModelMock.{ password = Some pass2; token = Some (session_id, 1L);
               alternative_email = None; admin = false }
 let model =
   ModelMock.{ db_sessions = StringMap.empty;
