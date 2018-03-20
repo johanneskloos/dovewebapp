@@ -1,26 +1,28 @@
 (jbuild_version 1)
 
-(library (
-  (name doveapp)
-  (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient))
-  (wrapped false)
-  (modules (
-    config time token doveadm
-    model database modelDatabase 
-    template mails mailSendmail
-    view viewWeb viewCgi
-    controller 
-  ))))
+(library
+  ((name doveapp)
+   (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient))
+   (wrapped false)
+   (modules (config time token doveadm
+		    model database modelDatabase 
+		    template mails mailSendmail
+		    view viewWeb viewCgi
+		    controller))))
 
-(executable (
-  (name tests)
-  (libraries (doveapp oUnit fmt qcheck))
-  (modules (mailMock modelMock viewMock webMock controllerTest databaseTest doveadmTest mailsTest modelDatabaseTest modelTest templateTest tokenTest viewCgiTest viewWebTest tests))))
+(executable
+  ((name tests)
+   (libraries (doveapp oUnit fmt qcheck))
+   (modules
+     (mailMock modelMock viewMock webMock
+	       controllerTest databaseTest doveadmTest mailsTest
+	       modelDatabaseTest modelTest templateTest tokenTest
+	       viewCgiTest viewWebTest tests))))
 (alias ((name runtest) (action (run ./tests.exe))))
 
-(executable (
-  (name application)
-  (public_name dovewebapp)
-  (package dovewebapp)
-  (libraries (doveapp netcgi2))
-  (modules application)))
+(executable
+  ((name application)
+   (public_name dovewebapp)
+   (package dovewebapp)
+   (libraries (doveapp netcgi2))
+   (modules application)))
