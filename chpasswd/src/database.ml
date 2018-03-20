@@ -2,6 +2,8 @@
 type db = { handle: Sqlite3.db; mutable in_transaction: bool }
 exception DatabaseFailure of string
 exception TypeError of string
+exception NotEnoughResults
+exception TooManyResults
 
 let database_failure rc =
   raise (DatabaseFailure (Sqlite3.Rc.to_string rc))
@@ -12,10 +14,12 @@ let expect_ok = function
 
 let expect_done = function
   | Sqlite3.Rc.DONE -> ()
+  | Sqlite3.Rc.ROW -> raise TooManyResults
   | rc -> database_failure rc
 
 let expect_row = function
   | Sqlite3.Rc.ROW -> ()
+  | Sqlite3.Rc.DONE -> raise NotEnoughResults
   | rc -> database_failure rc
 
 let expect_row_or_done = function
