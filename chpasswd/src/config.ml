@@ -10,8 +10,8 @@ let set_command_line (var: 'a config_option) value =
   var := (value, CommandLine)
 let init value: 'a config_option = ref (value, Default)
 
-let sessions_timeout = init 600. (* 10 minutes *)
-let token_lifetime = init 7200. (* 2 hours *)
+let sessions_timeout = init 600 (* 10 minutes *)
+let token_lifetime = init 7200 (* 2 hours *)
 let domain =
   try
     let cin = open_in "/etc/mailname" in
@@ -26,9 +26,9 @@ let mailserver = init "localhost"
 
 let config_args =
   Arg.[
-    ("-s", Float (set_command_line sessions_timeout),
+    ("-s", Int (set_command_line sessions_timeout),
      "session timeout (in seconds)");
-    ("-t", Float (set_command_line token_lifetime),
+    ("-t", Int (set_command_line token_lifetime),
      "token lifetime (in seconds)");
     ("-m", String (set_command_line domain), "Sender domain for e-mails");
     ("-M", String (set_command_line mailserver), "Mail server for SMTP");
@@ -54,9 +54,9 @@ let parse_config_file filename =
 	  let rest = String.sub line (index + 1) (-1) in
 	  match String.sub line 0 index with
 	  | "session_timeout" ->
-	    set_config_file sessions_timeout (float_of_string rest)
+	    set_config_file sessions_timeout (int_of_string rest)
 	  | "token_lifetime" ->
-	    set_config_file token_lifetime (float_of_string rest)
+	    set_config_file token_lifetime (int_of_string rest)
 	  | "domain" -> set_config_file domain rest
 	  | "data_directory" -> set_config_file datadir rest
 	  | "database" -> set_config_file database rest
