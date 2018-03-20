@@ -46,28 +46,28 @@ let parse_config_file filename =
       let line = input_line cin in
       incr lineno;
       let line = try
-	  let index = String.index line '#' in String.sub line 0 index
-	with Not_found -> line in
+          let index = String.index line '#' in String.sub line 0 index
+        with Not_found -> line in
       if line <> "" then
-	try
-	  let index = String.index line '=' in
-	  let rest = String.sub line (index + 1) (-1) in
-	  match String.sub line 0 index with
-	  | "session_timeout" ->
-	    set_config_file sessions_timeout (int_of_string rest)
-	  | "token_lifetime" ->
-	    set_config_file token_lifetime (int_of_string rest)
-	  | "domain" -> set_config_file domain rest
-	  | "data_directory" -> set_config_file datadir rest
-	  | "database" -> set_config_file database rest
-	  | "mailserver" -> set_config_file mailserver rest
-	  | key ->
-	    Format.eprintf "%s(%d): Unknown key %s" filename !lineno key;
-	    exit 1
-	with
-	| Not_found ->
-	  Format.eprintf "%s(%d): Syntax error, no '='" filename !lineno;
-	  exit 1
+        try
+          let index = String.index line '=' in
+          let rest = String.sub line (index + 1) (-1) in
+          match String.sub line 0 index with
+          | "session_timeout" ->
+            set_config_file sessions_timeout (int_of_string rest)
+          | "token_lifetime" ->
+            set_config_file token_lifetime (int_of_string rest)
+          | "domain" -> set_config_file domain rest
+          | "data_directory" -> set_config_file datadir rest
+          | "database" -> set_config_file database rest
+          | "mailserver" -> set_config_file mailserver rest
+          | key ->
+            Format.eprintf "%s(%d): Unknown key %s" filename !lineno key;
+            exit 1
+        with
+        | Not_found ->
+          Format.eprintf "%s(%d): Syntax error, no '='" filename !lineno;
+          exit 1
     done
   with
   | End_of_file -> ()

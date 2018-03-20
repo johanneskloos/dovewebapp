@@ -11,58 +11,58 @@ let level_to_tvalue =
 
 let format_message =
   let open Jg_types in function
-  | SUpdPassword user ->
-    Info ("upd_password", [ ("user", Tstr user) ])
-  | SUpdEMail { user; mail = Some mail } ->
-    Info ("upd_email", [ ("user", Tstr user); ("mail", Tstr mail) ])
-  | SUpdEMail { user; mail = None } ->
-    Info ("upd_email", [ ("user", Tstr user) ])
-  | SUpdAdmin { user; level = User } ->
-    Info ("set_user", [ ("user", Tstr user)])
-  | SUpdAdmin { user; level = Admin } ->
-    Info ("set_admin", [ ("user", Tstr user)])
-  | SSentToken user ->
-    Info ("token_sent", [ ("user", Tstr user)])
-  | SDeletedToken user ->
-    Info ("token_deleted", [ ("user", Tstr user)])
-  | SCreatedUser { user; level } ->
-    Info ("created", [ ("user", Tstr user);
-			    ("level", level_to_tvalue level) ])
-  | SCreatedUserSentToken { user; mail; level } ->
-    Info ("created", [ ("user", Tstr user);
-			    ("level", level_to_tvalue level);
-			    ("mail", Tstr mail) ])
-  | SCreatedUserWithToken { user; token; level } ->
-    Info ("created", [ ("user", Tstr user);
-			    ("level", level_to_tvalue level);
-			    ("token", Tstr token) ])
-  | SDeletedUser user ->
-    Info ("user_deleted", [("user",Tstr user)])
-  | FDatabase err ->
-    Error ("err_db", [("detail", Tstr err)])
-  | FExternal err ->
-    Error ("err_ext", [("detail", Tstr err)])
-  | FDeleteAllAdmin ->
-    Error ("err_delete_all_admin", [])
-  | FDeleteCurrent ->
-    Error ("err_delete_logged_in", [])
-  | FDeleteNotConfirmed user ->
-    Error ("err_delete_unconfirmed", [("user",Tstr user)])
-  | FPasswordMismatch ->
-    Error ("err_pw_mismatch", [])
-  | FAuth Model.User ->
-    Error ("err_auth_user", [])
-  | FAuth Model.Admin ->
-    Error ("err_auth_admin", [])
+    | SUpdPassword user ->
+      Info ("upd_password", [ ("user", Tstr user) ])
+    | SUpdEMail { user; mail = Some mail } ->
+      Info ("upd_email", [ ("user", Tstr user); ("mail", Tstr mail) ])
+    | SUpdEMail { user; mail = None } ->
+      Info ("upd_email", [ ("user", Tstr user) ])
+    | SUpdAdmin { user; level = User } ->
+      Info ("set_user", [ ("user", Tstr user)])
+    | SUpdAdmin { user; level = Admin } ->
+      Info ("set_admin", [ ("user", Tstr user)])
+    | SSentToken user ->
+      Info ("token_sent", [ ("user", Tstr user)])
+    | SDeletedToken user ->
+      Info ("token_deleted", [ ("user", Tstr user)])
+    | SCreatedUser { user; level } ->
+      Info ("created", [ ("user", Tstr user);
+                         ("level", level_to_tvalue level) ])
+    | SCreatedUserSentToken { user; mail; level } ->
+      Info ("created", [ ("user", Tstr user);
+                         ("level", level_to_tvalue level);
+                         ("mail", Tstr mail) ])
+    | SCreatedUserWithToken { user; token; level } ->
+      Info ("created", [ ("user", Tstr user);
+                         ("level", level_to_tvalue level);
+                         ("token", Tstr token) ])
+    | SDeletedUser user ->
+      Info ("user_deleted", [("user",Tstr user)])
+    | FDatabase err ->
+      Error ("err_db", [("detail", Tstr err)])
+    | FExternal err ->
+      Error ("err_ext", [("detail", Tstr err)])
+    | FDeleteAllAdmin ->
+      Error ("err_delete_all_admin", [])
+    | FDeleteCurrent ->
+      Error ("err_delete_logged_in", [])
+    | FDeleteNotConfirmed user ->
+      Error ("err_delete_unconfirmed", [("user",Tstr user)])
+    | FPasswordMismatch ->
+      Error ("err_pw_mismatch", [])
+    | FAuth Model.User ->
+      Error ("err_auth_user", [])
+    | FAuth Model.Admin ->
+      Error ("err_auth_admin", [])
 
 let format_messages msgs =
   let open Jg_types in
   let (infos, errors) =
     List.fold_left (fun (infos, errors) msg ->
-	let fmt key data = Tobj (("key", Tstr key) :: data) in
-	match format_message msg with
-	| Info (key, data) -> (fmt key data :: infos, errors)
-	| Error (key, data) -> (infos, fmt key data :: errors))
+        let fmt key data = Tobj (("key", Tstr key) :: data) in
+        match format_message msg with
+        | Info (key, data) -> (fmt key data :: infos, errors)
+        | Error (key, data) -> (infos, fmt key data :: errors))
       ([], []) msgs in
   [("infos", Tlist infos);
    ("errors", Tlist errors)]
@@ -75,17 +75,17 @@ let format_users users =
     Tobj [
       ("user", Tstr user_name);
       ("email", match user_alt_email with
-	| Some addr -> Tstr addr
-	| None -> Tnull);
+        | Some addr -> Tstr addr
+        | None -> Tnull);
       ("level", match user_level with
-	| User -> Tstr "user"
-	| Admin -> Tstr "admin");
+        | User -> Tstr "user"
+        | Admin -> Tstr "admin");
       ("token", match user_token, user_expires with
-	| Some token, Some timeout ->
-	  Tobj [("token", Tstr token);
-		("expires", Tstr (Time.format_timeout timeout))]
-	| None, None -> Tnull
-	| _, _ -> Tobj ["message", Tstr "inconsistent token state"])
+        | Some token, Some timeout ->
+          Tobj [("token", Tstr token);
+                ("expires", Tstr (Time.format_timeout timeout))]
+        | None, None -> Tnull
+        | _, _ -> Tobj ["message", Tstr "inconsistent token state"])
     ]
   in [("users", Tlist (List.map format_user users))]
 
@@ -210,7 +210,7 @@ struct
 
   let get_admin_mass_update view =
     let users = filter_map get_name_field
-	(enumerate_arguments view)
+        (enumerate_arguments view)
     in List.map (get_actions view) users |> List.flatten
 
   let format_login db msg =
@@ -219,7 +219,7 @@ struct
       | NoMessage -> Tnull
       | LoginFailed -> Tobj [("key", Tstr "login_failed")]
       | TokenSent user ->
-	Tobj [("key", Tstr "token_sent"); ("user", Tstr user)]
+        Tobj [("key", Tstr "token_sent"); ("user", Tstr user)]
     in
     Template.from_file ~models:[
       ("message", msg_data)
@@ -227,18 +227,18 @@ struct
 
   let format_admin_user db user msgs =
     Template.from_file ~models:([
-	("user", Jg_types.Tstr user);
-	("alt_email", match ModelImpl.user_get_email db user with
-	  | Some addr -> Jg_types.Tstr addr
-	  | None -> Jg_types.Tnull)
+        ("user", Jg_types.Tstr user);
+        ("alt_email", match ModelImpl.user_get_email db user with
+          | Some addr -> Jg_types.Tstr addr
+          | None -> Jg_types.Tnull)
       ] @ format_messages msgs) "admin_user.html"
 
   let format_admin_admin db user msgs users =
     Template.from_file ~models:([
-	("user", Jg_types.Tstr user);
-	("alt_email", match ModelImpl.user_get_email db user with
-	  | Some addr -> Jg_types.Tstr addr
-	  | None -> Jg_types.Tnull)
+        ("user", Jg_types.Tstr user);
+        ("alt_email", match ModelImpl.user_get_email db user with
+          | Some addr -> Jg_types.Tstr addr
+          | None -> Jg_types.Tnull)
       ] @ format_messages msgs @ format_users users) "admin_admin.html"
 
   let format_admin db auth msgs =
@@ -246,13 +246,13 @@ struct
     match auth.auth_level with
     | User -> format_admin_user db auth.auth_user msgs
     | Admin -> format_admin_admin db auth.auth_user msgs
-		 (ModelImpl.user_list db auth)
+                 (ModelImpl.user_list db auth)
 
   let format_forgot_form db ~user ~token pw_mismatch =
     Template.from_file ~models:([
-	("user", Jg_types.Tstr user);
-	("token", Jg_types.Tstr token);
-	("pw_mismatch", Jg_types.Tbool pw_mismatch)
+        ("user", Jg_types.Tstr user);
+        ("token", Jg_types.Tstr token);
+        ("pw_mismatch", Jg_types.Tbool pw_mismatch)
       ]) "forgot.html"
 
   let view_open_session = set_session_data

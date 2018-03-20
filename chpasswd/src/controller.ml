@@ -71,8 +71,8 @@ struct
     | Some sessionid ->
       match ModelImpl.session_retrieve db sessionid with
       | Some session ->
-	view_open_session view sessionid;
-	view_admin db view session []
+        view_open_session view sessionid;
+        view_admin db view session []
       | None -> view_login db view LoginFailed
 
   let send_token_email db ~user ~token =
@@ -88,8 +88,8 @@ struct
     match get_login_operation cgi with
     | Login ->
       event_login_login db cgi
-	(validate_user (get_login_user cgi))
-	(validate_pass (get_login_pass cgi))
+        (validate_user (get_login_user cgi))
+        (validate_pass (get_login_pass cgi))
     | Forgot ->
       event_login_forgot db cgi (validate_user (get_login_user cgi))
     | NoOperation -> view_login db cgi NoMessage
@@ -131,11 +131,11 @@ struct
     | None ->
       let token = ModelImpl.user_create_nopw db session ~user ~altemail ~level
       in begin match altemail with
-      | Some mail ->
-	Mail.send_account_email mail token;
-	view_admin db view session [SCreatedUserSentToken { user; mail; level }]
-      | None ->
-	view_admin db view session [SCreatedUserWithToken { user; token; level }]
+        | Some mail ->
+          Mail.send_account_email mail token;
+          view_admin db view session [SCreatedUserSentToken { user; mail; level }]
+        | None ->
+          view_admin db view session [SCreatedUserWithToken { user; token; level }]
       end
     | Some pass  ->
       ModelImpl.user_create_pw db session ~user ~pass ~altemail ~level;
@@ -161,26 +161,26 @@ struct
     | Some session ->
       match get_admin_operation cgi with
       | Logout ->
-	event_admin_logout db cgi session
+        event_admin_logout db cgi session
       | SetPass ->
-	event_admin_change_password db cgi session
-	  (validate_pass (get_admin_chpass_pass1 cgi))
-	  (validate_pass (get_admin_chpass_pass2 cgi))
+        event_admin_change_password db cgi session
+          (validate_pass (get_admin_chpass_pass1 cgi))
+          (validate_pass (get_admin_chpass_pass2 cgi))
       | SetMail ->
-	event_admin_change_email db cgi session
-	  (validate_email_option (get_admin_chmail_mail cgi))
+        event_admin_change_email db cgi session
+          (validate_email_option (get_admin_chmail_mail cgi))
       | Delete ->
-	event_admin_delete db cgi session (get_admin_delete_confirm cgi)
+        event_admin_delete db cgi session (get_admin_delete_confirm cgi)
       | Create ->
-	event_admin_create db cgi session
-	  (validate_user (get_admin_create_user cgi))
-	  (validate_pass_opt (get_admin_create_pass cgi))
-	  (validate_email_option (get_admin_create_mail cgi))
-	  (get_admin_create_level cgi)
+        event_admin_create db cgi session
+          (validate_user (get_admin_create_user cgi))
+          (validate_pass_opt (get_admin_create_pass cgi))
+          (validate_email_option (get_admin_create_mail cgi))
+          (get_admin_create_level cgi)
       | MassUpdate ->
-	event_admin_mass_update db cgi session (get_admin_mass_update cgi)
+        event_admin_mass_update db cgi session (get_admin_mass_update cgi)
       | NoOperation ->
-	view_admin db cgi session []
+        view_admin db cgi session []
 
   let event_forgot db cgi =
     let user = validate_user (get_forgot_user cgi)
@@ -191,8 +191,8 @@ struct
     | Some pass1, Some pass2 ->
       match ModelImpl.session_from_token db ~user ~token with
       | Some auth ->
-	event_admin_change_password_forgot db cgi token auth
-	   (validate_pass pass1) (validate_pass pass2)
+        event_admin_change_password_forgot db cgi token auth
+          (validate_pass pass1) (validate_pass pass2)
       | None ->
-	view_login db cgi LoginFailed
+        view_login db cgi LoginFailed
 end

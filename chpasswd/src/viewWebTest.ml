@@ -75,7 +75,7 @@ let request_forgot_no_pass =
   make [("user", user); ("token", session_id)]
 let request_forgot_pass =
   make [("user", user); ("token", session_id);
-	("pass1", pass); ("pass2", pass2)]
+        ("pass1", pass); ("pass2", pass2)]
 
 let assert_equal ?msg ~(fmt: 'a Fmt.t) (expected: 'a) (got: 'a) =
   assert_equal ?msg ~printer:(Fmt.to_to_string fmt) expected got
@@ -273,35 +273,35 @@ let test_get_admin_mass_update =
     has (TaskSetAdmin { user="blubb"; level = User });
     assert_bool "Extraneous list element"
       (not (List.exists (function
-	   | TaskSetPassword { user="frob" } -> true
-	   | _ -> false) ops))
+           | TaskSetPassword { user="frob" } -> true
+           | _ -> false) ops))
 
 let test_view_open_session =
   "view_open_session" >:: fun ctx ->
-       let view = make [] in
-       assert_equal ~fmt:Fmt.(option string) None view.session;
-       V.view_open_session view session_id;
-       assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session
+    let view = make [] in
+    assert_equal ~fmt:Fmt.(option string) None view.session;
+    V.view_open_session view session_id;
+    assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session
 
 let test_view_close_session =
   "view_close_session" >:: fun ctx ->
-       let view = make ~session:session_id [] in
-       assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session;
-       V.view_close_session view;
-       assert_equal ~fmt:Fmt.(option string) None view.session
+    let view = make ~session:session_id [] in
+    assert_equal ~fmt:Fmt.(option string) (Some session_id) view.session;
+    V.view_close_session view;
+    assert_equal ~fmt:Fmt.(option string) None view.session
 
 let user_data =
   ModelMock.{ password = Some pass; token = None;
-	      alternative_email = Some mail; admin = true }
+              alternative_email = Some mail; admin = true }
 let user2 = "bar"
 let user2_data =
   ModelMock.{ password = Some pass2; token = Some (session_id, 1.0);
-	      alternative_email = None; admin = false }
+              alternative_email = None; admin = false }
 let model =
   ModelMock.{ db_sessions = StringMap.empty;
-	      db_users = StringMap.empty
-		  |> StringMap.add user user_data
-                  |> StringMap.add user2 user2_data }
+              db_users = StringMap.empty
+                         |> StringMap.add user user_data
+                         |> StringMap.add user2 user2_data }
 
 let login_template =
   "{% if (message is undefined) %}nothing" ^
@@ -363,7 +363,7 @@ let test_view_admin_user_all_messages =
     close_out chan;
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
-	auth_level = User }
+        auth_level = User }
       [SUpdPassword user; SUpdEMail {user; mail=Some mail};
        SUpdEMail {user; mail=None};
        SUpdAdmin {user; level = User};
@@ -395,7 +395,7 @@ let test_view_admin_admin_all_messages =
     close_out chan;
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
-	auth_level = Admin }
+        auth_level = Admin }
       [SUpdPassword user; SUpdEMail {user; mail=Some mail};
        SUpdEMail {user; mail=None};
        SUpdAdmin {user; level = User};
@@ -424,27 +424,27 @@ let expected_view_forgot_form =
 
 let test_view_forgot_form =
   "view_forgot_form" >:: fun ctx ->
-  let dir = bracket_tmpdir ctx in
-  Config.(set_command_line datadir dir);
-  let view = make [] in
-  let chan = open_out (Filename.concat dir "forgot.html") in
-  output_string chan forgot_template;
-  close_out chan;
-  V.view_forgot_form model view ~user ~token:session_id false;
-  assert_equal ~fmt:Fmt.(option string)
-    (Some expected_view_forgot_form) view.page_body
+    let dir = bracket_tmpdir ctx in
+    Config.(set_command_line datadir dir);
+    let view = make [] in
+    let chan = open_out (Filename.concat dir "forgot.html") in
+    output_string chan forgot_template;
+    close_out chan;
+    V.view_forgot_form model view ~user ~token:session_id false;
+    assert_equal ~fmt:Fmt.(option string)
+      (Some expected_view_forgot_form) view.page_body
 
 let tests = "ViewWeb" >:::
-  [ test_get_login_operation; test_get_login_user; test_get_login_pass;
-  test_get_admin_sessionid; test_get_admin_operation;
-  test_get_admin_chpass_pass1; test_get_admin_chpass_pass2;
-  test_get_admin_chmail_mail; test_get_admin_delete_confirm;
-  test_get_admin_create_user; test_get_admin_create_pass;
-  test_get_admin_create_mail; test_get_admin_create_level;
-  test_get_admin_create_pass; test_get_admin_create_pass1;
-  test_get_admin_create_pass2; test_get_forgot_user;
-  test_get_forgot_token; test_get_admin_mass_update; test_view_open_session;
-  test_view_close_session; test_view_login; test_view_login_token_sent;
-  test_view_login_failed; test_view_admin_user_all_messages;
-  test_view_admin_admin_all_messages; test_view_forgot_form ]
+            [ test_get_login_operation; test_get_login_user; test_get_login_pass;
+              test_get_admin_sessionid; test_get_admin_operation;
+              test_get_admin_chpass_pass1; test_get_admin_chpass_pass2;
+              test_get_admin_chmail_mail; test_get_admin_delete_confirm;
+              test_get_admin_create_user; test_get_admin_create_pass;
+              test_get_admin_create_mail; test_get_admin_create_level;
+              test_get_admin_create_pass; test_get_admin_create_pass1;
+              test_get_admin_create_pass2; test_get_forgot_user;
+              test_get_forgot_token; test_get_admin_mass_update; test_view_open_session;
+              test_view_close_session; test_view_login; test_view_login_token_sent;
+              test_view_login_failed; test_view_admin_user_all_messages;
+              test_view_admin_admin_all_messages; test_view_forgot_form ]
 

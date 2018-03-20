@@ -109,23 +109,23 @@ struct
   let view_forgot_form model view ~user ~token badpw =
     view.history <- Forgot { model; user; token; badpw } :: view.history
   let make
-    ?(login_operation=(NoOperation: login_operation))
-    ?login_user ?login_pass
-    ?(admin_operation=(NoOperation: admin_operation))
-    ?admin_chpass_pass1
-    ?admin_chpass_pass2
-    ?admin_chmail_mail
-    ?(admin_delete_confirm=false)
-    ?admin_create_user
-    ?admin_create_pass
-    ?admin_create_mail
-    ?(admin_create_level=Model.User)
-    ?(admin_mass_update=[])
-    ?forgot_user
-    ?forgot_token
-    ?forgot_pass1
-    ?forgot_pass2
-    ?session () =
+      ?(login_operation=(NoOperation: login_operation))
+      ?login_user ?login_pass
+      ?(admin_operation=(NoOperation: admin_operation))
+      ?admin_chpass_pass1
+      ?admin_chpass_pass2
+      ?admin_chmail_mail
+      ?(admin_delete_confirm=false)
+      ?admin_create_user
+      ?admin_create_pass
+      ?admin_create_mail
+      ?(admin_create_level=Model.User)
+      ?(admin_mass_update=[])
+      ?forgot_user
+      ?forgot_token
+      ?forgot_pass1
+      ?forgot_pass2
+      ?session () =
     { login_operation; login_user; login_pass;
       admin_operation; admin_chpass_pass1; admin_chpass_pass2;
       admin_chmail_mail; admin_delete_confirm; admin_create_user;

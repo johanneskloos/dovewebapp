@@ -67,7 +67,7 @@ module Make(E: Externals) = struct
     if E.auth ~user ~pass then
       let token = E.generate_token () in
       execute_update db sql_insert_session
-	[str token; now Config.(get sessions_timeout); str user];
+        [str token; now Config.(get sessions_timeout); str user];
       Some token
     else
       None
@@ -82,16 +82,16 @@ module Make(E: Externals) = struct
     execute_select_at_most_one db sql_retrieve_authorization
       [str sessionid; now 0]
       (fun stmt ->
-	 let user = get_str stmt 0
-	 and admin = get_bool stmt 1 in
-	 { auth_session = Some sessionid;
-	   auth_user = user;
-	   auth_level = if admin then Admin else User })
+         let user = get_str stmt 0
+         and admin = get_bool stmt 1 in
+         { auth_session = Some sessionid;
+           auth_user = user;
+           auth_level = if admin then Admin else User })
 
   let session_from_token db ~user ~token =
     execute_select_at_most_one db sql_check_token [str user; str token; now 0]
       (fun _ ->
-	 { auth_session = None; auth_user = user; auth_level = User })
+         { auth_session = None; auth_user = user; auth_level = User })
 
   let user_update_password db session ~user ~pass =
     need_same_user session user;
@@ -111,13 +111,13 @@ module Make(E: Externals) = struct
     transaction_bracket db @@
     fun db ->
     match execute_select_at_most_one db sql_retrieve_token [str user; now 0]
-	    (fun stmt -> get_str stmt 0)
+            (fun stmt -> get_str stmt 0)
     with
     | Some token -> token
     | None ->
       let token = E.generate_token () in
       execute_update db sql_set_token
-	[str token; now Config.(get token_lifetime); str user];
+        [str token; now Config.(get token_lifetime); str user];
       token
 
   let user_update_admin db session ~user ~level =
@@ -157,7 +157,7 @@ module Make(E: Externals) = struct
       and user_alt_email = get_stropt stmt 3
       and user_level = if get_bool stmt 4 then Admin else User in
       { user_name; user_token; user_expires; user_alt_email;
-	user_level } :: users in
+        user_level } :: users in
     execute_select db sql_list_users [] user_collect [] |> List.rev
 
   let expire db =
@@ -169,30 +169,30 @@ module Make(E: Externals) = struct
     transaction_bracket db @@
     fun db ->
     List.fold_left (fun tokens ->
-	function
-	| TaskSetPassword { user; pass } ->
-	  user_update_password db session ~user ~pass;
-	  tokens
-	| TaskSetEMail { user; mail } ->
-	  user_update_alternative_email db session ~user ~mail;
-	  tokens
-	| TaskCreateToken user ->
-	  { user; token = user_create_token db user } :: tokens
-	| TaskDeleteToken user ->
-	  user_delete_token db session user;
-	  tokens
-	| TaskSetAdmin { user; level } ->
-	  user_update_admin db session user level;
-	  tokens
-	| TaskDelete user ->
-	  user_delete db session user;
-	  tokens)
+        function
+        | TaskSetPassword { user; pass } ->
+          user_update_password db session ~user ~pass;
+          tokens
+        | TaskSetEMail { user; mail } ->
+          user_update_alternative_email db session ~user ~mail;
+          tokens
+        | TaskCreateToken user ->
+          { user; token = user_create_token db user } :: tokens
+        | TaskDeleteToken user ->
+          user_delete_token db session user;
+          tokens
+        | TaskSetAdmin { user; level } ->
+          user_update_admin db session user level;
+          tokens
+        | TaskDelete user ->
+          user_delete db session user;
+          tokens)
       [] tasks
 
   let user_get_email db user =
     match
       execute_select_at_most_one db sql_get_email [str user]
-	(fun stmt -> get_stropt stmt 0)
+        (fun stmt -> get_stropt stmt 0)
     with
     | Some result -> result
     | None -> None

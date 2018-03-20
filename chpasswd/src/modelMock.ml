@@ -47,7 +47,7 @@ let session_retrieve db token =
     else
       let { admin } = StringMap.find username db.db_users in
       Some { auth_session = Some token; auth_user = username;
-	     auth_level = if admin then Admin else User }
+             auth_level = if admin then Admin else User }
   with Not_found -> None
 
 let session_from_token db ~user ~token =
@@ -55,7 +55,7 @@ let session_from_token db ~user ~token =
   | { admin; token = Some (token2, expires) }
     when token = token2 && expires >= !current_time ->
     Some { auth_session = None; auth_user = user;
-	   auth_level = if admin then Admin else User }
+           auth_level = if admin then Admin else User }
   | _ -> None
   | exception Not_found -> None
 
@@ -93,7 +93,7 @@ let user_update_admin db session ~user ~level =
   need_admin session;
   update_user_if_exists db user
     (fun data -> { data with
-		   admin = match level with Admin -> true | User -> false })
+                   admin = match level with Admin -> true | User -> false })
 
 let user_delete_token db session user =
   need_admin session;
@@ -103,27 +103,27 @@ let user_create_nopw db session ~user ~altemail ~level =
   need_admin session;
   let token = mktoken user in
   let data = { password = None; token = Some token;
-	       alternative_email = altemail;
-	       admin = match level with Admin -> true | User -> false } in
+               alternative_email = altemail;
+               admin = match level with Admin -> true | User -> false } in
   db.db_users <- StringMap.add user data db.db_users;
   fst token
 
 let user_create_pw db session ~user ~pass ~altemail ~level =
   need_admin session;
   let data = { password = Some pass; token = None;
-	       alternative_email = altemail;
-	       admin = match level with Admin -> true | User -> false } in
+               alternative_email = altemail;
+               admin = match level with Admin -> true | User -> false } in
   db.db_users <- StringMap.add user data db.db_users
 
 let user_list db session =
   need_admin session;
   List.map (fun (user, { token; alternative_email; admin }) ->
       { user_name = user; user_alt_email = alternative_email;
-	user_token =
-	  (match token with Some (tok, _) -> Some tok | None -> None);
-	user_expires =
-	  (match token with Some (_, exp) -> Some exp | None -> None);
-	user_level = if admin then Admin else User })
+        user_token =
+          (match token with Some (tok, _) -> Some tok | None -> None);
+        user_expires =
+          (match token with Some (_, exp) -> Some exp | None -> None);
+        user_level = if admin then Admin else User })
     (StringMap.bindings db.db_users)
 
 let expire _ = ()
@@ -133,22 +133,22 @@ let user_task_run db session tasks =
   List.fold_left (fun tokens ->
       function
       | TaskSetPassword { user; pass } ->
-	user_update_password db session ~user ~pass;
-	tokens
+        user_update_password db session ~user ~pass;
+        tokens
       | TaskSetEMail { user; mail } ->
-	user_update_alternative_email db session ~user ~mail;
-	tokens
+        user_update_alternative_email db session ~user ~mail;
+        tokens
       | TaskCreateToken user ->
-	{ user; token = user_create_token db user } :: tokens
+        { user; token = user_create_token db user } :: tokens
       | TaskDeleteToken user ->
-	user_delete_token db session user;
-	tokens
+        user_delete_token db session user;
+        tokens
       | TaskSetAdmin { user; level } ->
-	user_update_admin db session user level;
-	tokens
+        user_update_admin db session user level;
+        tokens
       | TaskDelete user ->
-	user_delete db session user;
-	tokens)
+        user_delete db session user;
+        tokens)
     [] tasks
 
 

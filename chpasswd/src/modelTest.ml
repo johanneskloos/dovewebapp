@@ -8,11 +8,11 @@ let auth_admin =
 
 let test_need_same_user =
   "need_same_user" >:: fun ctx ->
-       need_same_user auth_user "foo";
-       assert_raises (AuthorizationNeeded User)
-	 (fun () -> need_same_user auth_user "bla");
-       need_same_user auth_admin "foo";
-       need_same_user auth_admin "bla"
+    need_same_user auth_user "foo";
+    assert_raises (AuthorizationNeeded User)
+      (fun () -> need_same_user auth_user "bla");
+    need_same_user auth_admin "foo";
+    need_same_user auth_admin "bla"
 
 let test_need_admin =
   "need_admin" >:: fun ctx ->

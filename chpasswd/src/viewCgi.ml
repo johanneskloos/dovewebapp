@@ -8,7 +8,7 @@ let enumerate_arguments view =
 
 let get_session_data view =
   try Some (view.cgi # environment # cookie "session"
-	    |> Netcgi.Cookie.value)
+            |> Netcgi.Cookie.value)
   with Not_found -> None
 
 let set_session_data view token = view.set_session <- Some token

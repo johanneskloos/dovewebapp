@@ -22,7 +22,7 @@ type admin_messages =
 
 type login_operation = Login | Forgot | NoOperation
 type admin_operation =
-  Logout | SetPass | SetMail | Delete | Create | MassUpdate | NoOperation
+    Logout | SetPass | SetMail | Delete | Create | MassUpdate | NoOperation
 
 module type S = sig
   type model

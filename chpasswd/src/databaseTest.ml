@@ -25,13 +25,13 @@ let test_execute_update =
        Database.execute_update db "INSERT INTO test (data) VALUES (1)" [];
        let seen_data = ref [] in
        assert_equal Sqlite3.Rc.OK
-	 (Sqlite3.exec_no_headers db.handle
-	    ~cb:(function
-		| [| Some value |] -> seen_data := value :: !seen_data
-		| [| None |] -> invalid_arg ("null value, integer expected")
-		| row -> invalid_arg ("Expected one column, got " ^
-				      string_of_int (Array.length row)))
-	    "SELECT data FROM test");
+         (Sqlite3.exec_no_headers db.handle
+            ~cb:(function
+                | [| Some value |] -> seen_data := value :: !seen_data
+                | [| None |] -> invalid_arg ("null value, integer expected")
+                | row -> invalid_arg ("Expected one column, got " ^
+                                      string_of_int (Array.length row)))
+            "SELECT data FROM test");
        assert_equal ~fmt:Fmt.(list string) ["1"] !seen_data)
 
 let test_execute_update_fail =
@@ -40,30 +40,30 @@ let test_execute_update_fail =
     (fun db ->
        Database.execute_update db "INSERT INTO test VALUES (1)" [];
        assert_raises_some (fun () ->
-	   Database.execute_update db "INSERT INTO test VALUES (1)" []))
+           Database.execute_update db "INSERT INTO test VALUES (1)" []))
 
 let assert_database_empty db =
   expect_ok (Sqlite3.exec_no_headers db.handle
-	       ~cb:(fun _ -> failwith "No data expected")
-	"SELECT data FROM test")
+               ~cb:(fun _ -> failwith "No data expected")
+               "SELECT data FROM test")
 
 let test_execute_update_bind =
   make_sql_test ~title:"Tset SQL statement updates"
     "CREATE TABLE test (data SMALLINT)"
     (fun db ->
        Database.execute_update db "INSERT INTO test (data) VALUES (?)"
-	 [Sqlite3.Data.INT 0L];
+         [Sqlite3.Data.INT 0L];
        Database.execute_update db "INSERT INTO test (data) VALUES (?)"
-	 [Sqlite3.Data.INT 1L];
+         [Sqlite3.Data.INT 1L];
        let seen_data = ref [] in
        assert_equal Sqlite3.Rc.OK
-	 (Sqlite3.exec_no_headers db.handle
-	    ~cb:(function
-		| [| Some value |] -> seen_data := value :: !seen_data
-		| [| None |] -> invalid_arg ("null value, integer expected")
-		| row -> invalid_arg ("Expected one column, got " ^
-				      string_of_int (Array.length row)))
-	    "SELECT data FROM test ORDER BY data");
+         (Sqlite3.exec_no_headers db.handle
+            ~cb:(function
+                | [| Some value |] -> seen_data := value :: !seen_data
+                | [| None |] -> invalid_arg ("null value, integer expected")
+                | row -> invalid_arg ("Expected one column, got " ^
+                                      string_of_int (Array.length row)))
+            "SELECT data FROM test ORDER BY data");
        assert_equal ~fmt:Fmt.(list string) ["1"; "0"] !seen_data)
 
 let test_execute_update_too_few_args =
@@ -71,7 +71,7 @@ let test_execute_update_too_few_args =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        assert_raises_some (fun () ->
-	   Database.execute_update db "INSERT INTO test VALUES (?)" []);
+           Database.execute_update db "INSERT INTO test VALUES (?)" []);
        assert_database_empty db
     )
 
@@ -81,7 +81,7 @@ let test_execute_update_too_many_args =
     (fun db ->
        let arg = Sqlite3.Data.INT 0L in
        assert_raises_some (fun () ->
-	   Database.execute_update db "INSERT INTO test VALUES (?)" [arg; arg]);
+           Database.execute_update db "INSERT INTO test VALUES (?)" [arg; arg]);
        assert_database_empty db)
 
 let setup_data_for_select { handle } =
@@ -94,7 +94,7 @@ let extract_int row =
   match Sqlite3.column row 0 with
   | Sqlite3.Data.INT cell -> cell
   | c -> assert_failure ("Expected cell of type INT, got " ^
-			 Sqlite3.Data.to_string c)
+                         Sqlite3.Data.to_string c)
 
 let test_execute_select =
   make_sql_test ~title:"Test select"
@@ -102,10 +102,10 @@ let test_execute_select =
     (fun db ->
        setup_data_for_select db;
        assert_equal ~fmt:Fmt.(list int64)
-	 [2L; 1L; 0L]
-	 (execute_select db "SELECT data FROM test ORDER BY data" []
-	    (fun row data -> extract_int row :: data)
-	    []))
+         [2L; 1L; 0L]
+         (execute_select db "SELECT data FROM test ORDER BY data" []
+            (fun row data -> extract_int row :: data)
+            []))
 
 let test_execute_select_bind =
   make_sql_test ~title:"Test select with binding"
@@ -113,19 +113,19 @@ let test_execute_select_bind =
     (fun db ->
        setup_data_for_select db;
        assert_equal ~fmt:Fmt.(list int64)
-	 [2L; 1L]
-	 (execute_select db "SELECT data FROM test WHERE data >= ? ORDER BY data"
-	    [Sqlite3.Data.INT 1L]
-	    (fun row data -> extract_int row :: data)
-	    []))
+         [2L; 1L]
+         (execute_select db "SELECT data FROM test WHERE data >= ? ORDER BY data"
+            [Sqlite3.Data.INT 1L]
+            (fun row data -> extract_int row :: data)
+            []))
 
 let test_execute_select_too_few_args =
   make_sql_test ~title:"Test select with too few args"
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        assert_raises_some (fun () ->
-	   Database.execute_select db "SELECT data FROM test WHERE data >= ?" []
-	     (fun _ () -> ()) ()))
+           Database.execute_select db "SELECT data FROM test WHERE data >= ?" []
+             (fun _ () -> ()) ()))
 
 let test_execute_select_too_many_args =
   make_sql_test ~title:"Test select with too many args"
@@ -133,9 +133,9 @@ let test_execute_select_too_many_args =
     (fun db ->
        let arg = Sqlite3.Data.INT 0L in
        assert_raises_some (fun () ->
-	   Database.execute_select db "SELECT data FROM test WHERE data >= ?"
-	     [arg; arg]
-	     (fun _ () -> ()) ()))
+           Database.execute_select db "SELECT data FROM test WHERE data >= ?"
+             [arg; arg]
+             (fun _ () -> ()) ()))
 
 let test_execute_select_at_most_one_zero =
   make_sql_test ~title:"Test select (<= 1) with zero"
@@ -143,9 +143,9 @@ let test_execute_select_at_most_one_zero =
     (fun db ->
        setup_data_for_select db;
        assert_equal ~fmt:Fmt.(option int64) None
-	 (Database.execute_select_at_most_one db
-	    "SELECT data FROM test WHERE data > ?"
-	    [Sqlite3.Data.INT 2L] extract_int))
+         (Database.execute_select_at_most_one db
+            "SELECT data FROM test WHERE data > ?"
+            [Sqlite3.Data.INT 2L] extract_int))
 
 let test_execute_select_at_most_one_one =
   make_sql_test ~title:"Test select (<= 1) with one"
@@ -153,9 +153,9 @@ let test_execute_select_at_most_one_one =
     (fun db ->
        setup_data_for_select db;
        assert_equal ~fmt:Fmt.(option int64) (Some 2L)
-	 (Database.execute_select_at_most_one db
-	    "SELECT data FROM test WHERE data > ?"
-	    [Sqlite3.Data.INT 1L] extract_int))
+         (Database.execute_select_at_most_one db
+            "SELECT data FROM test WHERE data > ?"
+            [Sqlite3.Data.INT 1L] extract_int))
 
 let test_execute_select_at_most_one_more =
   make_sql_test ~title:"Test select (<= 1) with one"
@@ -163,9 +163,9 @@ let test_execute_select_at_most_one_more =
     (fun db ->
        setup_data_for_select db;
        assert_raises_some (fun () ->
-	   Database.execute_select_at_most_one db
-	     "SELECT data FROM test WHERE data > ?"
-	     [Sqlite3.Data.INT 0L] extract_int))
+           Database.execute_select_at_most_one db
+             "SELECT data FROM test WHERE data > ?"
+             [Sqlite3.Data.INT 0L] extract_int))
 
 let test_execute_select_one_zero =
   make_sql_test ~title:"Test select (= 1) with zero"
@@ -173,10 +173,10 @@ let test_execute_select_one_zero =
     (fun db ->
        setup_data_for_select db;
        assert_raises_some
-	 (fun () ->
-	    Database.execute_select_one db
-	      "SELECT data FROM test WHERE data > ?"
-	      [Sqlite3.Data.INT 2L] extract_int))
+         (fun () ->
+            Database.execute_select_one db
+              "SELECT data FROM test WHERE data > ?"
+              [Sqlite3.Data.INT 2L] extract_int))
 
 let test_execute_select_one_one =
   make_sql_test ~title:"Test select (= 1) with one"
@@ -184,9 +184,9 @@ let test_execute_select_one_one =
     (fun db ->
        setup_data_for_select db;
        assert_equal ~fmt:Fmt.int64 2L
-	 (Database.execute_select_one db
-	    "SELECT data FROM test WHERE data > ?"
-	    [Sqlite3.Data.INT 1L] extract_int))
+         (Database.execute_select_one db
+            "SELECT data FROM test WHERE data > ?"
+            [Sqlite3.Data.INT 1L] extract_int))
 
 let test_execute_select_one_more =
   make_sql_test ~title:"Test select (= 1) with one"
@@ -194,9 +194,9 @@ let test_execute_select_one_more =
     (fun db ->
        setup_data_for_select db;
        assert_raises_some (fun () ->
-	   Database.execute_select_one db
-	     "SELECT data FROM test WHERE data > ?"
-	     [Sqlite3.Data.INT 0L] extract_int))
+           Database.execute_select_one db
+             "SELECT data FROM test WHERE data > ?"
+             [Sqlite3.Data.INT 0L] extract_int))
 
 let test_transaction_bracket_sucess =
   make_sql_test ~title:"Test transaction bracket - success case"
@@ -204,20 +204,20 @@ let test_transaction_bracket_sucess =
     (fun db ->
        transaction_bracket db setup_data_for_select;
        assert_equal ~fmt:Fmt.(list int64)
-	 [2L; 1L; 0L]
-	 (execute_select db "SELECT data FROM test ORDER BY data" []
-	    (fun row data -> extract_int row :: data)
-	    []))
+         [2L; 1L; 0L]
+         (execute_select db "SELECT data FROM test ORDER BY data" []
+            (fun row data -> extract_int row :: data)
+            []))
 
 let test_transaction_bracket_fail =
   make_sql_test ~title:"Test transaction bracket - failure case"
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        assert_raises_some
-	 (fun () -> transaction_bracket db
-	     (fun db ->
-		setup_data_for_select db;
-		setup_data_for_select db));
+         (fun () -> transaction_bracket db
+             (fun db ->
+                setup_data_for_select db;
+                setup_data_for_select db));
        assert_database_empty db)
 
 let test_transaction_bracket_fail_inner =
@@ -225,19 +225,19 @@ let test_transaction_bracket_fail_inner =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        assert_raises_some
-	 (fun () -> transaction_bracket db
-	     (fun db ->
-		setup_data_for_select db;
-		transaction_bracket db setup_data_for_select));
+         (fun () -> transaction_bracket db
+             (fun db ->
+                setup_data_for_select db;
+                transaction_bracket db setup_data_for_select));
        assert_database_empty db)
 
 let tests = "Database" >:::
-  [test_execute_update; test_execute_update_fail; test_execute_update_bind;
-   (*test_execute_update_too_few_args;*) test_execute_update_too_many_args;
-   test_execute_select; test_execute_select_bind;
-   (*test_execute_select_too_few_args;*) test_execute_select_too_many_args;
-   test_execute_select_at_most_one_zero; test_execute_select_at_most_one_one;
-   test_execute_select_at_most_one_more; test_execute_select_one_zero;
-   test_execute_select_one_one; test_execute_select_one_more;
-   test_transaction_bracket_sucess; test_transaction_bracket_fail;
-   test_transaction_bracket_fail_inner]
+            [test_execute_update; test_execute_update_fail; test_execute_update_bind;
+             (*test_execute_update_too_few_args;*) test_execute_update_too_many_args;
+             test_execute_select; test_execute_select_bind;
+             (*test_execute_select_too_few_args;*) test_execute_select_too_many_args;
+             test_execute_select_at_most_one_zero; test_execute_select_at_most_one_one;
+             test_execute_select_at_most_one_more; test_execute_select_one_zero;
+             test_execute_select_one_one; test_execute_select_one_more;
+             test_transaction_bracket_sucess; test_transaction_bracket_fail;
+             test_transaction_bracket_fail_inner]

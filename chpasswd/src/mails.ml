@@ -8,11 +8,11 @@ module Make(Strat: Strategy) = struct
       ("token", Jg_types.Tstr token)
     ] in
     let body = Netsendmail.compose
-      ~from_addr:("Account management",
-		  "no-reply@" ^ Config.(get domain))
-      ~to_addrs:[("", email)]
-      ~subject
-      (Template.from_file ~models template) in
+        ~from_addr:("Account management",
+                    "no-reply@" ^ Config.(get domain))
+        ~to_addrs:[("", email)]
+        ~subject
+        (Template.from_file ~models template) in
     Strat.send_mail email body
 
   let send_token_email ~email ~user ~token =

@@ -59,10 +59,10 @@ let execute_select_at_most_one db stmt args fn =
   prepare_bind_cleanup db stmt args
     (fun _ stmt ->
        if expect_row_or_done (Sqlite3.step stmt) then
-	 let result = Some (fn stmt) in
-	 expect_done (Sqlite3.step stmt); result
+         let result = Some (fn stmt) in
+         expect_done (Sqlite3.step stmt); result
        else
-	 None)
+         None)
 
 let execute_select_one db stmt args fn =
   prepare_bind_cleanup db stmt args
@@ -107,7 +107,7 @@ let type_string = function
   | Sqlite3.Data.BLOB _ -> "a blob"
 let type_error what i t =
   raise (TypeError (Format.sprintf "Expected %s at %d, but got %s"
-		      what i (type_string t)))
+                      what i (type_string t)))
 
 let get_str stmt idx = match Sqlite3.column stmt idx with
   | Sqlite3.Data.TEXT x -> x
