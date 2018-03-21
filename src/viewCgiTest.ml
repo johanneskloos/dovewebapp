@@ -1,6 +1,7 @@
 open OUnit2
 open ViewCgi
 open Netcgi
+open TestTools
 
 let make_cgi ?(cookies=[]) query buf =
   let open Netcgi_common in
@@ -44,17 +45,6 @@ let make_cgi ?(cookies=[]) query buf =
       (fun _ _ _ -> `Automatic)
   in { cgi; set_session = None }
 
-let assert_equal ?ctxt ?cmp ?pp_diff ?msg ?(fmt=Fmt.nop) =
-  assert_equal ?ctxt ?cmp ?pp_diff ?msg ~printer:(Fmt.to_to_string fmt)
-let assert_raises_some ?msg fn =
-  try
-    fn ();
-    assert_failure
-      ((match msg with Some prefix -> prefix ^ ": " | None -> "") ^
-       "Expected an exception")
-  with _ -> ()
-
-
 let test_get_named_argument_opt =
   "get_named_argument_opt" >:: fun ctx ->
     let value = "blah"
@@ -62,19 +52,19 @@ let test_get_named_argument_opt =
     and field2 = "bar"
     and outbuf = Buffer.create 1024 in
     let view = make_cgi [(field1, value)] outbuf in
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some value) (get_named_argument_opt view field1);
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       None (get_named_argument_opt view field2)
 
 let test_get_session_data =
   "get_session_data" >:: fun ctx ->
     let value = "xyz"
     and outbuf = Buffer.create 10 in
-    assert_equal ~fmt:Fmt.(option string) (Some value)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) (Some value)
       (get_session_data (make_cgi ~cookies:[("session", value)]
                            [] outbuf));
-    assert_equal ~fmt:Fmt.(option string) None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None
       (get_session_data (make_cgi [] outbuf))
 
 let extract buf =
@@ -106,15 +96,15 @@ let test_output_page_ok_no_cookie =
     and body = "blah" in
     output_page view ViewWeb.StatOk body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "200" (String.sub (header # field "Status") 0 3);
-    assert_equal ~fmt:Fmt.string body body';
+    assert_equal ~pp_diff:(vs @@ Fmt.string) body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "text/html" (fst (get_content_type header));
-    assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
+    assert_equal ~pp_diff:(vs @@ Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
-    assert_equal ~fmt:Fmt.(option string) None view.set_session
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.set_session
 
 
 let test_output_page_ok_cookie =
@@ -126,15 +116,15 @@ let test_output_page_ok_cookie =
     view.set_session <- Some session;
     output_page view ViewWeb.StatOk body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "200" (String.sub (header # field "Status") 0 3);
-    assert_equal ~fmt:Fmt.string body body';
+    assert_equal ~pp_diff:(vs @@ Fmt.string) body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "text/html" (fst (get_content_type header));
-    assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
+    assert_equal ~pp_diff:(vs @@ Fmt.list pp_netscape_cookie)
       [mkcookie "session" session] (get_set_cookie header);
-    assert_equal ~fmt:Fmt.(option string) None view.set_session
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.set_session
 
 let test_output_page_auth =
   "output_page, auth error" >:: fun ctx ->
@@ -143,15 +133,15 @@ let test_output_page_auth =
     and body = "blah" in
     output_page view ViewWeb.StatAuth body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "401" (String.sub (header # field "Status") 0 3);
-    assert_equal ~fmt:Fmt.string body body';
+    assert_equal ~pp_diff:(vs @@ Fmt.string) body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "text/html" (fst (get_content_type header));
-    assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
+    assert_equal ~pp_diff:(vs @@ Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
-    assert_equal ~fmt:Fmt.(option string) None view.set_session
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.set_session
 
 let test_output_page_err =
   "output_page, generic error" >:: fun ctx ->
@@ -160,15 +150,15 @@ let test_output_page_err =
     and body = "blah" in
     output_page view ViewWeb.StatError body;
     let (header, body') = extract buf in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "500" (String.sub (header # field "Status") 0 3);
-    assert_equal ~fmt:Fmt.string body body';
+    assert_equal ~pp_diff:(vs @@ Fmt.string) body body';
     let open Nethttp.Header in
-    assert_equal ~fmt:Fmt.string
+    assert_equal ~pp_diff:(vs @@ Fmt.string)
       "text/html" (fst (get_content_type header));
-    assert_equal ~fmt:(Fmt.list pp_netscape_cookie)
+    assert_equal ~pp_diff:(vs @@ Fmt.list pp_netscape_cookie)
       [] (get_set_cookie header);
-    assert_equal ~fmt:Fmt.(option string) None view.set_session
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.set_session
 
 
 let tests =

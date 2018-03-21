@@ -14,7 +14,7 @@
      ((name tests)
         (libraries (doveapp oUnit fmt qcheck))
         (modules
-           (mailMock modelMock viewMock webMock
+           (mailMock modelMock viewMock webMock testTools
               controllerTest databaseTest doveadmTest mailsTest
               modelDatabaseTest modelTest templateTest tokenTest
               viewCgiTest viewWebTest tests))))

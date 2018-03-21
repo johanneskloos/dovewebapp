@@ -1,5 +1,6 @@
 open Database
 open OUnit2
+open TestTools
 
 let make_sql_test ~title schema (fn: Database.db -> unit) =
   title >:: fun ctx ->
@@ -7,16 +8,6 @@ let make_sql_test ~title schema (fn: Database.db -> unit) =
     let db = Sqlite3.db_open (Filename.concat dir "test.db") in
     Database.expect_ok (Sqlite3.exec db schema);
     fn { handle = db; in_transaction = false }
-
-let assert_equal ?ctxt ?cmp ?pp_diff ?msg ?(fmt=Fmt.nop) =
-  assert_equal ?ctxt ?cmp ?pp_diff ?msg ~printer:(Fmt.to_to_string fmt)
-let assert_raises_some ?msg fn =
-  try
-    fn ();
-    assert_failure
-      ((match msg with Some prefix -> prefix ^ ": " | None -> "") ^
-       "Expected an exception")
-  with _ -> ()
 
 let test_execute_update =
   make_sql_test ~title:"Test SQL statement updates, no arguments"
@@ -34,7 +25,7 @@ let test_execute_update =
                 | row -> invalid_arg ("Expected one column, got " ^
                                       string_of_int (Array.length row)))
             "SELECT data FROM test");
-       assert_equal ~fmt:Fmt.(list string) ["1"] !seen_data)
+       assert_equal ~pp_diff:Fmt.(vs @@ list string) ["1"] !seen_data)
 
 let test_execute_update_fail =
   make_sql_test ~title:"Test failing update"
@@ -67,7 +58,7 @@ let test_execute_update_bind =
                 | row -> invalid_arg ("Expected one column, got " ^
                                       string_of_int (Array.length row)))
             "SELECT data FROM test ORDER BY data");
-       assert_equal ~fmt:Fmt.(list string) ["1"; "0"] !seen_data)
+       assert_equal ~pp_diff:Fmt.(vs @@ list string) ["1"; "0"] !seen_data)
 
 let test_execute_update_too_few_args =
   make_sql_test ~title:"Test update with too few args"
@@ -94,7 +85,7 @@ let setup_data_for_select { handle } =
   expect_ok (Sqlite3.exec handle "INSERT INTO test VALUES (2)")
 
 let extract_int row =
-  assert_equal ~fmt:Fmt.int 1 (Sqlite3.column_count row);
+  assert_equal ~pp_diff:Fmt.(vs int) 1 (Sqlite3.column_count row);
   match Sqlite3.column row 0 with
   | Sqlite3.Data.INT cell -> cell
   | c -> assert_failure ("Expected cell of type INT, got " ^
@@ -105,7 +96,7 @@ let test_execute_select =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        setup_data_for_select db;
-       assert_equal ~fmt:Fmt.(list int64)
+       assert_equal ~pp_diff:Fmt.(vs @@ list int64)
          [2L; 1L; 0L]
          (execute_select db "SELECT data FROM test ORDER BY data" []
             (fun row data -> extract_int row :: data)
@@ -116,7 +107,7 @@ let test_execute_select_bind =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        setup_data_for_select db;
-       assert_equal ~fmt:Fmt.(list int64)
+       assert_equal ~pp_diff:Fmt.(vs @@ list int64)
          [2L; 1L]
          (execute_select db
             "SELECT data FROM test WHERE data >= ? ORDER BY data"
@@ -149,7 +140,7 @@ let test_execute_select_at_most_one_zero =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        setup_data_for_select db;
-       assert_equal ~fmt:Fmt.(option int64) None
+       assert_equal ~pp_diff:Fmt.(vs @@ option int64) None
          (Database.execute_select_at_most_one db
             "SELECT data FROM test WHERE data > ?"
             [Sqlite3.Data.INT 2L] extract_int))
@@ -159,7 +150,7 @@ let test_execute_select_at_most_one_one =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        setup_data_for_select db;
-       assert_equal ~fmt:Fmt.(option int64) (Some 2L)
+       assert_equal ~pp_diff:Fmt.(vs @@ option int64) (Some 2L)
          (Database.execute_select_at_most_one db
             "SELECT data FROM test WHERE data > ?"
             [Sqlite3.Data.INT 1L] extract_int))
@@ -190,7 +181,7 @@ let test_execute_select_one_one =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        setup_data_for_select db;
-       assert_equal ~fmt:Fmt.int64 2L
+       assert_equal ~pp_diff:Fmt.(vs int64) 2L
          (Database.execute_select_one db
             "SELECT data FROM test WHERE data > ?"
             [Sqlite3.Data.INT 1L] extract_int))
@@ -210,7 +201,7 @@ let test_transaction_bracket_sucess =
     "CREATE TABLE test (data SMALLINT PRIMARY KEY)"
     (fun db ->
        transaction_bracket db setup_data_for_select;
-       assert_equal ~fmt:Fmt.(list int64)
+       assert_equal ~pp_diff:Fmt.(vs @@ list int64)
          [2L; 1L; 0L]
          (execute_select db "SELECT data FROM test ORDER BY data" []
             (fun row data -> extract_int row :: data)

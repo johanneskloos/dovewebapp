@@ -1,5 +1,6 @@
 open OUnit2
 open View
+open TestTools
 
 module V = ViewWeb.Make(ModelMock)(WebMock)
 module SM = WebMock.StringMap
@@ -77,15 +78,6 @@ let request_forgot_pass =
   make [("user", user); ("token", session_id);
         ("pass1", pass); ("pass2", pass2)]
 
-let assert_equal ?msg ~(fmt: 'a Fmt.t) (expected: 'a) (got: 'a) =
-  assert_equal ?msg ~printer:(Fmt.to_to_string fmt) expected got
-
-let assert_raises_some ?msg fn =
-  try ignore (fn ()); assert_failure
-      ((match msg with Some prefix -> prefix ^ ": " | None -> "") ^
-       "Expected an exception to be raised")
-  with _ -> ()
-
 let operation_to_string = function
   | Login -> "login"
   | Forgot -> "forgot"
@@ -94,32 +86,32 @@ let pp_login_operation = Fmt.of_to_string operation_to_string
 
 let test_get_login_operation =
   "get_login_operation" >:: fun ctx ->
-    assert_equal ~fmt:pp_login_operation ~msg:"noop"
+    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"noop"
       (NoOperation: login_operation)
       (V.get_login_operation request_login_noop);
-    assert_equal ~fmt:pp_login_operation ~msg:"login"
+    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"login"
       Login (V.get_login_operation request_login_login);
-    assert_equal ~fmt:pp_login_operation ~msg:"forgot"
+    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"forgot"
       Forgot (V.get_login_operation request_login_forgot);
     assert_raises_some (fun () -> V.get_login_operation request_junk)
 
 let test_get_login_user =
   "get_login_user" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       user (V.get_login_user request_login_login);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_login_user request_login_noop)
 
 let test_get_login_pass =
   "get_login_pass" >:: fun ctx ->
-    assert_equal ~msg:"with" ~fmt:Fmt.string
+    assert_equal ~msg:"with" ~pp_diff:(vs @@ Fmt.string)
       pass (V.get_login_pass request_login_login);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_login_pass request_login_noop)
 
 let test_get_admin_sessionid =
   "get_admin_sessionid" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       session_id (V.get_admin_sessionid request_admin_noop);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_admin_sessionid request_login_noop)
@@ -136,55 +128,55 @@ let pp_admin_operation = Fmt.of_to_string admin_operation_to_string
 
 let test_get_admin_operation =
   "get_admin_operation" >:: fun ctx ->
-    assert_equal ~fmt:pp_admin_operation ~msg:"noop"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"noop"
       (NoOperation: admin_operation)
       (V.get_admin_operation request_admin_noop);
-    assert_equal ~fmt:pp_admin_operation ~msg:"logout"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"logout"
       Logout (V.get_admin_operation request_admin_logout);
-    assert_equal ~fmt:pp_admin_operation ~msg:"set_pass"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"set_pass"
       SetPass (V.get_admin_operation request_admin_set_pass);
-    assert_equal ~fmt:pp_admin_operation ~msg:"set_mail"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"set_mail"
       SetMail (V.get_admin_operation request_admin_set_mail_set);
-    assert_equal ~fmt:pp_admin_operation ~msg:"delete"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"delete"
       Delete (V.get_admin_operation request_admin_delete_on);
-    assert_equal ~fmt:pp_admin_operation ~msg:"create"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"create"
       Create
       (V.get_admin_operation request_admin_create_with_pass_mail_admin);
-    assert_equal ~fmt:pp_admin_operation ~msg:"mass_udpate"
+    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"mass_udpate"
       MassUpdate (V.get_admin_operation request_admin_mass_update);
     assert_raises_some (fun () -> V.get_admin_operation request_junk)
 
 let test_get_admin_chpass_pass1 =
   "get_chpass_pass1" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       pass (V.get_admin_chpass_pass1 request_admin_set_pass);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_admin_chpass_pass1 request_login_noop)
 
 let test_get_admin_chpass_pass2 =
   "get_chpass_pass2" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       pass2 (V.get_admin_chpass_pass2 request_admin_set_pass);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_admin_chpass_pass2 request_login_noop)
 
 let test_get_admin_chmail_mail =
   "get_chmail_mail" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some mail)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some mail)
       (V.get_admin_chmail_mail request_admin_set_mail_set);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_admin_chmail_mail request_admin_set_mail_unset)
 
 let test_get_admin_delete_confirm =
   "get_delete_confirm" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.bool ~msg:"with" true
+    assert_equal ~pp_diff:(vs @@ Fmt.bool) ~msg:"with" true
       (V.get_admin_delete_confirm request_admin_delete_on);
-    assert_equal ~fmt:Fmt.bool ~msg:"without" false
+    assert_equal ~pp_diff:(vs @@ Fmt.bool) ~msg:"without" false
       (V.get_admin_delete_confirm request_admin_delete_off)
 
 let test_get_admin_create_user =
   "get_admin_create_user" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with" user
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with" user
       (V.get_admin_create_user
          request_admin_create_with_pass_mail_admin);
     assert_raises_some ~msg:"without"
@@ -192,19 +184,19 @@ let test_get_admin_create_user =
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
       (V.get_admin_create_pass
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_admin_create_pass
          request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_mail =
   "get_create_mail" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some mail)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some mail)
       (V.get_admin_create_mail
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_admin_create_mail
          request_admin_create_without_pass_mail_user)
 
@@ -214,46 +206,46 @@ let pp_level = Fmt.of_to_string level_to_string
 
 let test_get_admin_create_level =
   "get_create_level" >:: fun ctx ->
-    assert_equal ~fmt:pp_level ~msg:"with" Model.Admin
+    assert_equal ~pp_diff:(vs @@ pp_level) ~msg:"with" Model.Admin
       (V.get_admin_create_level
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~fmt:pp_level ~msg:"without" Model.User
+    assert_equal ~pp_diff:(vs @@ pp_level) ~msg:"without" Model.User
       (V.get_admin_create_level
          request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
       (V.get_admin_create_pass
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_admin_create_pass
          request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_pass1 =
   "get_create_pass1" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
       (V.get_forgot_pass1 request_forgot_pass);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_forgot_pass1 request_forgot_no_pass)
 
 let test_get_admin_create_pass2 =
   "get_create_pass2" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.(option string) ~msg:"with" (Some pass2)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass2)
       (V.get_forgot_pass2 request_forgot_pass);
-    assert_equal ~fmt:Fmt.(option string) ~msg:"without" None
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
       (V.get_forgot_pass2 request_forgot_no_pass)
 
 let test_get_forgot_user =
   "get_forgot_user" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       user (V.get_forgot_user request_forgot_pass);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_forgot_user request_junk)
 
 let test_get_forgot_token =
   "get_forgot_user" >:: fun ctx ->
-    assert_equal ~fmt:Fmt.string ~msg:"with"
+    assert_equal ~pp_diff:(vs @@ Fmt.string) ~msg:"with"
       session_id (V.get_forgot_token request_forgot_pass);
     assert_raises_some ~msg:"without"
       (fun () -> V.get_forgot_token request_junk)
@@ -289,18 +281,18 @@ let test_get_admin_mass_update =
 let test_view_open_session =
   "view_open_session" >:: fun ctx ->
     let view = make [] in
-    assert_equal ~fmt:Fmt.(option string) None view.session;
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.session;
     V.view_open_session view session_id;
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some session_id) view.session
 
 let test_view_close_session =
   "view_close_session" >:: fun ctx ->
     let view = make ~session:session_id [] in
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some session_id) view.session;
     V.view_close_session view;
-    assert_equal ~fmt:Fmt.(option string) None view.session
+    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.session
 
 let user_data =
   ModelMock.{ password = Some pass; token = None;
@@ -328,7 +320,7 @@ let test_view_login =
     output_string chan login_template;
     close_out chan;
     V.view_login model view View.NoMessage;
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some "nothing") view.page_body
 
 let test_view_login_token_sent =
@@ -340,7 +332,7 @@ let test_view_login_token_sent =
     output_string chan login_template;
     close_out chan;
     V.view_login model view (View.TokenSent user);
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some ("forgot:" ^ user)) view.page_body
 
 let test_view_login_failed =
@@ -352,7 +344,7 @@ let test_view_login_failed =
     output_string chan login_template;
     close_out chan;
     V.view_login model view View.LoginFailed;
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some ("login_failed")) view.page_body
 
 let admin_user_template =
@@ -401,7 +393,7 @@ let test_view_admin_user_all_messages =
        FPasswordMismatch;
        FAuth Model.User;
        FAuth Model.Admin];
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some expected_view_admin_user_all_messages) view.page_body
 
 let test_view_admin_admin_all_messages =
@@ -433,7 +425,7 @@ let test_view_admin_admin_all_messages =
        FPasswordMismatch;
        FAuth Model.User;
        FAuth Model.Admin];
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some expected_view_admin_admin_all_messages) view.page_body
 
 let forgot_template =
@@ -450,7 +442,7 @@ let test_view_forgot_form =
     output_string chan forgot_template;
     close_out chan;
     V.view_forgot_form model view ~user ~token:session_id false;
-    assert_equal ~fmt:Fmt.(option string)
+    assert_equal ~pp_diff:Fmt.(vs @@ option string)
       (Some expected_view_forgot_form) view.page_body
 
 let tests =
