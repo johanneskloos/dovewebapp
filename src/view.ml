@@ -1,4 +1,5 @@
-type login_messages = TokenSent of string | LoginFailed | NoMessage
+type login_messages =
+    TokenSent of string | LoginFailed | NoMessage [@@deriving show]
 type admin_messages =
     SUpdPassword of string
   | SUpdEMail of { user: string; mail: string option }
@@ -18,13 +19,14 @@ type admin_messages =
   | FDeleteCurrent
   | FDeleteNotConfirmed of string
   | FPasswordMismatch
+[@@deriving show]
 
-type message_type = Info of string | Error of string
+type message_type = Info of string | Error of string [@@deriving show]
 
-type login_operation = Login | Forgot | NoOperation
+type login_operation = Login | Forgot | NoOperation [@@deriving show]
 type admin_operation =
     Logout | SetPass | SetMail | Delete | Create | MassUpdate
-  | NoOperation
+  | NoOperation [@@deriving show]
 
 
 module type S = sig

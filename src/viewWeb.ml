@@ -89,7 +89,7 @@ let format_users users =
     ]
   in [("users", Tlist (List.map format_user users))]
 
-type page_status = StatOk | StatAuth | StatError
+type page_status = StatOk | StatAuth | StatError [@@deriving show]
 
 module type Strategy = sig
   type view

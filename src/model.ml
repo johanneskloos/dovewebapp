@@ -6,10 +6,12 @@ type authdata = {
   auth_session: string option;
   auth_user: string;
   auth_level: level
-}
+} [@@deriving show]
+
 let need_same_user authdata user =
   if authdata.auth_user <> user && authdata.auth_level <> Admin then
     raise (AuthorizationNeeded User)
+
 let need_admin authdata =
   if authdata.auth_level <> Admin then
     raise (AuthorizationNeeded Admin)
@@ -20,7 +22,7 @@ type user_entry = {
   user_expires: int64 option;
   user_alt_email: string option;
   user_level: level
-}
+} [@@deriving show]
 
 type task =
   | TaskSetPassword of { user: string; pass: string }
@@ -29,7 +31,10 @@ type task =
   | TaskDeleteToken of string
   | TaskSetAdmin of { user: string; level: level }
   | TaskDelete of string
-type token_info = { user: string; token: string }
+[@@deriving show]
+
+type token_info = { user: string; token: string } [@@deriving show]
+
 module type S = sig
   type db
   val session_login : db -> user:string -> pass:string -> string option

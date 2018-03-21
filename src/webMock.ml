@@ -4,7 +4,7 @@ type view = {
   mutable session: string option;
   mutable page_status: ViewWeb.page_status option;
   mutable page_body: string option
-}
+} [@@deriving show]
 
 let get_named_argument_opt { arguments } key =
   try Some (StringMap.find key arguments) with Not_found -> None

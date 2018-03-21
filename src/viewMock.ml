@@ -8,6 +8,8 @@ module Make(ModelImpl: Model.S): sig
                   user: string;
                   token: string;
                   badpw: bool }
+  [@@deriving show]
+
   type viewstate = {
     login_operation: View.login_operation;
     login_user: string option;
@@ -29,6 +31,7 @@ module Make(ModelImpl: Model.S): sig
     mutable session: string option;
     mutable history: history_item list
   }
+
   include View.S with type model = ModelImpl.db
                   and type view = viewstate
   val make:
@@ -63,6 +66,7 @@ struct
                  messages: admin_messages list }
     | Forgot of { model: model; user: string; token: string;
                   badpw: bool }
+  [@@deriving show]
 
   type viewstate = {
     login_operation: login_operation;

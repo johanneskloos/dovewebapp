@@ -5,7 +5,8 @@ type authdata = {
   auth_session : string option;
   auth_user : string;
   auth_level : level;
-}
+} [@@deriving show]
+
 val need_same_user: authdata -> string -> unit
 val need_admin: authdata -> unit
 type user_entry = {
@@ -14,7 +15,8 @@ type user_entry = {
   user_expires : int64 option;
   user_alt_email : string option;
   user_level : level;
-}
+} [@@deriving show]
+
 type task =
   | TaskSetPassword of { user: string; pass: string }
   | TaskSetEMail of { user: string; mail: string option }
@@ -22,7 +24,10 @@ type task =
   | TaskDeleteToken of string
   | TaskSetAdmin of { user: string; level: level }
   | TaskDelete of string
-type token_info = { user: string; token: string }
+[@@deriving show]
+
+type token_info = { user: string; token: string } [@@deriving show]
+
 module type S = sig
   type db
   val session_login : db -> user:string -> pass:string -> string option
