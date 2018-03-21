@@ -94,31 +94,22 @@ let db_sessions =
   |> StringMap.add "foo1" session_foo_1
   |> StringMap.add "foo2" session_foo_2
   |> StringMap.add "baz" session_baz
-let mk_model () = ModelMock.{ db_users; db_sessions }
-
-let pp_history_item pp = let open V in
-  function
-  | Login { model; message } ->
-    Format.fprintf pp "login"
-  | Admin { model; session; messages } ->
-    Format.fprintf pp "admin"
-  | Forgot { model; user; token; badpw } ->
-    Format.fprintf pp "forgot(%s, %s, %b)" user token badpw
+let mk_model key = ModelMock.{ db_users; db_sessions; key }
 
 let test_event_login_login =
   "Test event_login with login" >:: fun ctx ->
     let open View in
-    let model = mk_model ()
+    let model = mk_model ""
     and view =
       V.make ~login_operation:Login ~login_user:"bar"
         ~login_pass:"blubb" () in
     C.event_login model view;
-    assert_equal (mk_model ()) model;
+    assert_equal (mk_model "") model;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       (Some "tok1") (view.session);
     let session = Model.{ auth_session = Some "tok1";
                           auth_user = "bar"; auth_level = User } in
-    assert_equal ~pp_diff:(vs @@ Fmt.list pp_history_item)
+    assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
       V.[Admin { model; session; messages = [] }] view.history
 
 (* TODO operation tests *)
