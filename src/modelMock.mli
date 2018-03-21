@@ -1,5 +1,4 @@
 open Model
-module StringMap: Map.S with type key = string
 type user_data = {
   password: string option;
   token: (string * int64) option;

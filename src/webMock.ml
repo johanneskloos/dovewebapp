@@ -1,4 +1,3 @@
-module StringMap = Map.Make(String)
 type view = {
   arguments: string StringMap.t;
   mutable session: string option;

@@ -4,7 +4,7 @@
   ((name doveapp)
    (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient))
    (wrapped false)
-   (preprocess (pps (ppx_deriving)))
+   (preprocess (pps (ppx_deriving.std)))
    (modules (config time token doveadm
                     model database modelDatabase 
                     template mails mailSendmail
@@ -14,7 +14,7 @@
 (executable
   ((name tests)
    (libraries (doveapp oUnit fmt qcheck))
-   (preprocess (pps (ppx_deriving)))
+   (preprocess (pps (ppx_deriving.std)))
    (modules
      (stringMap mailMock modelMock viewMock webMock testTools
                 controllerTest databaseTest doveadmTest mailsTest

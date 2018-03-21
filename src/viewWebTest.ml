@@ -3,7 +3,7 @@ open View
 open TestTools
 
 module V = ViewWeb.Make(ModelMock)(WebMock)
-module SM = WebMock.StringMap
+module SM = StringMap
 
 let session_id = "sid1"
 let make ?session params =

@@ -1,5 +1,4 @@
 open Model
-module StringMap = Map.Make(String)
 type user_data = {
   password: string option;
   token: (string * int64) option;
