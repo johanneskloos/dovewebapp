@@ -9,23 +9,23 @@ module Make(ModelImpl: Model.S): sig
                   token: string;
                   badpw: bool }
   type viewstate = {
-    mutable login_operation: View.login_operation;
-    mutable login_user: string option;
-    mutable login_pass: string option;
-    mutable admin_operation: View.admin_operation;
-    mutable admin_chpass_pass1: string option;
-    mutable admin_chpass_pass2: string option;
-    mutable admin_chmail_mail: string option;
-    mutable admin_delete_confirm: bool;
-    mutable admin_create_user: string option;
-    mutable admin_create_pass: string option;
-    mutable admin_create_mail: string option;
-    mutable admin_create_level: Model.level;
-    mutable admin_mass_update: Model.task list;
-    mutable forgot_user: string option;
-    mutable forgot_token: string option;
-    mutable forgot_pass1: string option;
-    mutable forgot_pass2: string option;
+    login_operation: View.login_operation;
+    login_user: string option;
+    login_pass: string option;
+    admin_operation: View.admin_operation;
+    admin_chpass_pass1: string option;
+    admin_chpass_pass2: string option;
+    admin_chmail_mail: string option;
+    admin_delete_confirm: bool;
+    admin_create_user: string option;
+    admin_create_pass: string option;
+    admin_create_mail: string option;
+    admin_create_level: Model.level;
+    admin_mass_update: Model.task list;
+    forgot_user: string option;
+    forgot_token: string option;
+    forgot_pass1: string option;
+    forgot_pass2: string option;
     mutable session: string option;
     mutable history: history_item list
   }
@@ -65,23 +65,23 @@ struct
                   badpw: bool }
 
   type viewstate = {
-    mutable login_operation: login_operation;
-    mutable login_user: string option;
-    mutable login_pass: string option;
-    mutable admin_operation: admin_operation;
-    mutable admin_chpass_pass1: string option;
-    mutable admin_chpass_pass2: string option;
-    mutable admin_chmail_mail: string option;
-    mutable admin_delete_confirm: bool;
-    mutable admin_create_user: string option;
-    mutable admin_create_pass: string option;
-    mutable admin_create_mail: string option;
-    mutable admin_create_level: level;
-    mutable admin_mass_update: task list;
-    mutable forgot_user: string option;
-    mutable forgot_token: string option;
-    mutable forgot_pass1: string option;
-    mutable forgot_pass2: string option;
+    login_operation: login_operation;
+    login_user: string option;
+    login_pass: string option;
+    admin_operation: admin_operation;
+    admin_chpass_pass1: string option;
+    admin_chpass_pass2: string option;
+    admin_chmail_mail: string option;
+    admin_delete_confirm: bool;
+    admin_create_user: string option;
+    admin_create_pass: string option;
+    admin_create_mail: string option;
+    admin_create_level: level;
+    admin_mass_update: task list;
+    forgot_user: string option;
+    forgot_token: string option;
+    forgot_pass1: string option;
+    forgot_pass2: string option;
     mutable session: string option;
     mutable history: history_item list
   }
