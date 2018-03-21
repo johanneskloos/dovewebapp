@@ -1,5 +1,6 @@
 open OUnit2
 open Controller
+open TestTools
 
 let validate_user_1 =
   "Validate valid user name" >:: fun ctx ->
@@ -41,6 +42,84 @@ let tests_validate_email = [validate_email_1; validate_email_2]
 
 module V = ViewMock.Make(ModelMock)
 module C = Make(ModelMock)(V)(MailMock)
+
+let user_foo =
+  ModelMock.{
+    password = Some "blahblah";
+    token = Some ("5A3B2F9D", Int64.max_int);
+    alternative_email = Some "foo@example.org";
+    admin = true
+  }
+let user_bar =
+  ModelMock.{
+    password = Some "blubb";
+    token = None;
+    alternative_email = None;
+    admin = false
+  }
+let user_baz =
+  ModelMock.{
+    password = None;
+    token = None;
+    alternative_email = None;
+    admin = false
+  }
+let user_frob = user_baz
+
+let session_foo_1 =
+  ModelMock.{
+    username = "foo";
+    expires = Int64.max_int
+  }
+let session_foo_2 =
+  ModelMock.{
+    username = "foo";
+    expires = Int64.min_int
+  }
+let session_baz =
+  ModelMock.{
+    username = "baz";
+    expires = Int64.min_int
+  }
+let db_users =
+  let open ModelMock in
+  StringMap.empty
+  |> StringMap.add "foo" user_foo
+  |> StringMap.add "bar" user_bar
+  |> StringMap.add "baz" user_baz
+  |> StringMap.add "frob" user_frob
+let db_sessions =
+  let open ModelMock in
+  StringMap.empty
+  |> StringMap.add "foo1" session_foo_1
+  |> StringMap.add "foo2" session_foo_2
+  |> StringMap.add "baz" session_baz
+let mk_model () = ModelMock.{ db_users; db_sessions }
+
+let pp_history_item pp = let open V in
+  function
+  | Login { model; message } ->
+    Format.fprintf pp "login"
+  | Admin { model; session; messages } ->
+    Format.fprintf pp "admin"
+  | Forgot { model; user; token; badpw } ->
+    Format.fprintf pp "forgot(%s, %s, %b)" user token badpw
+
+let test_event_login_login =
+  "Test event_login with login" >:: fun ctx ->
+    let open View in
+    let model = mk_model ()
+    and view =
+      V.make ~login_operation:Login ~login_user:"bar"
+        ~login_pass:"blubb" () in
+    C.event_login model view;
+    assert_equal (mk_model ()) model;
+    assert_equal ~pp_diff:(vs @@ Fmt.(option string))
+      (Some "tok1") (view.session);
+    let session = Model.{ auth_session = Some "tok1";
+                          auth_user = "bar"; auth_level = User } in
+    assert_equal ~pp_diff:(vs @@ Fmt.list pp_history_item)
+      V.[Admin { model; session; messages = [] }] view.history
 
 (* TODO operation tests *)
 
