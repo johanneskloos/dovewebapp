@@ -78,20 +78,14 @@ let request_forgot_pass =
   make [("user", user); ("token", session_id);
         ("pass1", pass); ("pass2", pass2)]
 
-let operation_to_string = function
-  | Login -> "login"
-  | Forgot -> "forgot"
-  | NoOperation -> "no operation"
-let pp_login_operation = Fmt.of_to_string operation_to_string
-
 let test_get_login_operation =
   "get_login_operation" >:: fun ctx ->
-    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"noop"
+    assert_equal ~pp_diff:(vs @@ View.pp_login_operation) ~msg:"noop"
       (NoOperation: login_operation)
       (V.get_login_operation request_login_noop);
-    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"login"
+    assert_equal ~pp_diff:(vs @@ View.pp_login_operation) ~msg:"login"
       Login (V.get_login_operation request_login_login);
-    assert_equal ~pp_diff:(vs @@ pp_login_operation) ~msg:"forgot"
+    assert_equal ~pp_diff:(vs @@ View.pp_login_operation) ~msg:"forgot"
       Forgot (V.get_login_operation request_login_forgot);
     assert_raises_some (fun () -> V.get_login_operation request_junk)
 
@@ -116,33 +110,23 @@ let test_get_admin_sessionid =
     assert_raises_some ~msg:"without"
       (fun () -> V.get_admin_sessionid request_login_noop)
 
-let admin_operation_to_string = function
-  | Logout -> "logout"
-  | SetPass -> "set_pass"
-  | SetMail -> "set_mail"
-  | Delete -> "delete"
-  | Create -> "create"
-  | MassUpdate -> "mass_update"
-  | NoOperation -> "no_operation"
-let pp_admin_operation = Fmt.of_to_string admin_operation_to_string
-
 let test_get_admin_operation =
   "get_admin_operation" >:: fun ctx ->
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"noop"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"noop"
       (NoOperation: admin_operation)
       (V.get_admin_operation request_admin_noop);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"logout"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"logout"
       Logout (V.get_admin_operation request_admin_logout);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"set_pass"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"set_pass"
       SetPass (V.get_admin_operation request_admin_set_pass);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"set_mail"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"set_mail"
       SetMail (V.get_admin_operation request_admin_set_mail_set);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"delete"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"delete"
       Delete (V.get_admin_operation request_admin_delete_on);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"create"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"create"
       Create
       (V.get_admin_operation request_admin_create_with_pass_mail_admin);
-    assert_equal ~pp_diff:(vs @@ pp_admin_operation) ~msg:"mass_udpate"
+    assert_equal ~pp_diff:(vs @@ View.pp_admin_operation) ~msg:"mass_udpate"
       MassUpdate (V.get_admin_operation request_admin_mass_update);
     assert_raises_some (fun () -> V.get_admin_operation request_junk)
 
@@ -200,16 +184,12 @@ let test_get_admin_create_mail =
       (V.get_admin_create_mail
          request_admin_create_without_pass_mail_user)
 
-let level_to_string =
-  Model.(function Admin -> "admin" | User -> "user")
-let pp_level = Fmt.of_to_string level_to_string
-
 let test_get_admin_create_level =
   "get_create_level" >:: fun ctx ->
-    assert_equal ~pp_diff:(vs @@ pp_level) ~msg:"with" Model.Admin
+    assert_equal ~pp_diff:(vs @@ Model.pp_level) ~msg:"with" Model.Admin
       (V.get_admin_create_level
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~pp_diff:(vs @@ pp_level) ~msg:"without" Model.User
+    assert_equal ~pp_diff:(vs @@ Model.pp_level) ~msg:"without" Model.User
       (V.get_admin_create_level
          request_admin_create_without_pass_mail_user)
 
@@ -305,7 +285,9 @@ let model =
   ModelMock.{ db_sessions = StringMap.empty;
               db_users = StringMap.empty
                          |> StringMap.add user user_data
-                         |> StringMap.add user2 user2_data }
+                         |> StringMap.add user2 user2_data;
+              key = ""
+            }
 
 let login_template =
   "{% if (message is undefined) %}nothing" ^

@@ -1,13 +1,17 @@
 module Make(ModelImpl: Model.S): sig
   type history_item =
-      Login of { model: ModelImpl.db; message: View.login_messages }
-    | Admin of { model: ModelImpl.db;
-                 session: Model.authdata;
-                 messages: View.admin_messages list }
-    | Forgot of { model: ModelImpl.db;
-                  user: string;
-                  token: string;
-                  badpw: bool }
+      Login of
+        { model: ModelImpl.db;
+          message: View.login_messages }
+    | Admin of
+        { model: ModelImpl.db;
+          session: Model.authdata;
+          messages: View.admin_messages list }
+    | Forgot of
+        { model: ModelImpl.db;
+          user: string;
+          token: string;
+          badpw: bool }
   [@@deriving show]
 
   type viewstate = {
@@ -61,10 +65,10 @@ struct
 
   type model = ModelImpl.db
   type history_item =
-      Login of { model: model; message: login_messages }
-    | Admin of { model: model; session: authdata;
+      Login of { model: (model [@opaque]); message: login_messages }
+    | Admin of { model: (model [@opaque]); session: authdata;
                  messages: admin_messages list }
-    | Forgot of { model: model; user: string; token: string;
+    | Forgot of { model: (model [@opaque]); user: string; token: string;
                   badpw: bool }
   [@@deriving show]
 

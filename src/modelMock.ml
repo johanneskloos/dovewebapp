@@ -9,7 +9,7 @@ type user_data = {
 type session = {
   expires: int64;
   username: string
-} [@@derivign show]
+} [@@deriving show]
 
 type database = {
   mutable db_users: user_data StringMap.t;

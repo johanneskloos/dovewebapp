@@ -51,9 +51,6 @@ let encode_expiry = function
   | Some time -> Sqlite3.Data.INT time
   | None -> Sqlite3.Data.NULL
 
-let pp_level pp = function
-  | Model.Admin -> Fmt.string pp "admin"
-  | Model.User -> Fmt.string pp "user"
 let int64_max_diff delta x y = Int64.(abs (sub x y) < delta)
 let option_cmp some_cmp x y =
   match x, y with
@@ -84,7 +81,7 @@ let assert_has_user db ~user ~pass ~email ~token ~token_expires ~level =
            ~pp_diff:Fmt.(vs @@ option int64) token_expires token_expires';
          assert_equal ~msg:"E-Mail" ~pp_diff:Fmt.(vs @@ option string)
            email email';
-         assert_equal ~msg:"Level" ~pp_diff:(vs pp_level) level level')
+         assert_equal ~msg:"Level" ~pp_diff:(vs Model.pp_level) level level')
   with Database.NotEnoughResults ->
     assert_failure ("User " ^ user ^ " not in database")
 
@@ -159,19 +156,11 @@ let test_session_logout_no_sid =
          (has_session db "foo" (Some "sid1")
             (Some 100L)))
 
-let pp_level pp = function
-  | Model.User -> Format.fprintf pp "user"
-  | Model.Admin -> Format.fprintf pp "admin"
-let pp_authdata pp Model.{ auth_session; auth_user; auth_level } =
-  let open Fmt in
-  Format.fprintf pp "%a: %s, %a" (option string) auth_session auth_user
-    pp_level auth_level
-
 let test_session_retrieve_impl db =
   setup_session db Int64.max_int;
   add_user ~user:"foo" ~pass:None ~email:None ~token:None
     ~token_expires:None ~level:Model.User db;
-  assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata)
+  assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata)
     (Some Model.{ auth_session = Some "sid1"; auth_user = "foo";
                   auth_level = User })
     (M.session_retrieve db "sid1")
@@ -186,7 +175,7 @@ let test_session_retrieve_2 =
        setup_session db Int64.max_int;
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
          ~token_expires:None ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata)
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata)
          (Some Model.{ auth_session = Some "sid1"; auth_user = "foo";
                        auth_level = Admin })
          (M.session_retrieve db "sid1"))
@@ -197,14 +186,14 @@ let test_session_no_session =
        setup_session db Int64.max_int;
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
          ~token_expires:None ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata)
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata)
          None (M.session_retrieve db "sid2"))
 
 let test_session_no_user =
   make_database_test ~title:"session_retrieve, no user data"
     (fun db ->
        setup_session db Int64.max_int;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata)
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata)
          None (M.session_retrieve db "sid1"))
 
 let test_session_from_token =
@@ -212,7 +201,7 @@ let test_session_from_token =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
          ~token_expires:(Some Int64.max_int) ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata)
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata)
          (Some Model.{ auth_session = None; auth_user = "foo";
                        auth_level = User })
          (M.session_from_token db ~user:"foo" ~token:"tok"))
@@ -222,7 +211,7 @@ let test_session_from_token_expired =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
          ~token_expires:(Some Int64.min_int) ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata) None
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata) None
          (M.session_from_token db ~user:"foo" ~token:"tok"))
 
 let test_session_from_token_wrong_token =
@@ -230,7 +219,7 @@ let test_session_from_token_wrong_token =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
          ~token_expires:(Some Int64.max_int) ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata) None
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata) None
          (M.session_from_token db ~user:"foo" ~token:"wrong"))
 
 let test_session_from_token_wrong_user =
@@ -238,7 +227,7 @@ let test_session_from_token_wrong_user =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:(Some "tok")
          ~token_expires:(Some Int64.max_int) ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata) None
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata) None
          (M.session_from_token db ~user:"bar" ~token:"tok"))
 
 let test_session_from_token_no_token =
@@ -246,7 +235,7 @@ let test_session_from_token_no_token =
     (fun db ->
        add_user ~user:"foo" ~pass:None ~email:None ~token:None
          ~token_expires:None ~level:Model.Admin db;
-       assert_equal ~pp_diff:(vs @@ Fmt.option pp_authdata) None
+       assert_equal ~pp_diff:(vs @@ Fmt.option Model.pp_authdata) None
          (M.session_from_token db ~user:"foo" ~token:"wrong"))
 
 let auth_user =

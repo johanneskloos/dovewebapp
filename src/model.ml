@@ -1,4 +1,4 @@
-type level = User | Admin
+type level = User | Admin [@@deriving show]
 exception AuthorizationNeeded of level
 exception ExternalFailure of string
 
