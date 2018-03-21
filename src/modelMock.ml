@@ -105,6 +105,7 @@ let user_delete_token db session user =
 
 let user_create_nopw db session ~user ~altemail ~level =
   need_admin session;
+  if StringMap.mem user db.db_users then failwith "User exists";
   let token = mktoken user in
   let data =
     { password = None; token = Some token;
@@ -115,6 +116,7 @@ let user_create_nopw db session ~user ~altemail ~level =
 
 let user_create_pw db session ~user ~pass ~altemail ~level =
   need_admin session;
+  if StringMap.mem user db.db_users then failwith "User exists";
   let data =
     { password = Some pass; token = None;
       alternative_email = altemail;
