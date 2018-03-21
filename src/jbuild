@@ -16,10 +16,10 @@
    (libraries (doveapp oUnit fmt qcheck))
    (preprocess (pps (ppx_deriving)))
    (modules
-     (mailMock modelMock viewMock webMock testTools
-               controllerTest databaseTest doveadmTest mailsTest
-               modelDatabaseTest modelTest templateTest tokenTest
-               viewCgiTest viewWebTest tests))))
+     (stringMap mailMock modelMock viewMock webMock testTools
+                controllerTest databaseTest doveadmTest mailsTest
+                modelDatabaseTest modelTest templateTest tokenTest
+                viewCgiTest viewWebTest tests))))
 (alias ((name runtest) (action (run ./tests.exe))))
 
 (executable
