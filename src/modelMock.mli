@@ -17,5 +17,10 @@ type database = {
   key: string
 } [@@deriving show]
 
+val user_add : string -> user_data -> database -> unit
+val session_add : string -> session -> database -> unit
+val user_rem : string -> database -> unit
+val session_rem : string -> database -> unit
+
 val current_time: int64 ref
 include S with type db = database

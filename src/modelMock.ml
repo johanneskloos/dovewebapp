@@ -17,6 +17,18 @@ type database = {
   key: string
 } [@@deriving show]
 
+let user_add user data ({ db_users } as db) =
+  db.db_users <- StringMap.add user data db_users
+
+let session_add sid data ({ db_sessions } as db) =
+  db.db_sessions <- StringMap.add sid data db_sessions
+
+let user_rem user ({ db_users } as db) =
+  db.db_users <- StringMap.remove user db_users
+
+let session_rem user ({ db_sessions } as db) =
+  db.db_sessions <- StringMap.remove user db_sessions
+
 type db = database
 
 let current_time = ref 0L
