@@ -98,7 +98,7 @@ let user_delete db session user =
   db.db_users <- StringMap.remove user db.db_users
 
 let mktoken user =
-  (Digest.(to_hex (string (user ^ Int64.to_string !current_time))),
+  ((user ^ ":" ^ Int64.to_string !current_time),
    Int64.add !current_time 500L)
 
 let user_create_token db user =
