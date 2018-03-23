@@ -8,6 +8,7 @@ val domain : string config_option
 val datadir : string config_option
 val database : string config_option
 val mailserver : string config_option
+val mailport : int config_option
 val default_config : bool config_option
 val config_args : (string * Arg.spec * string) list
 val parse_config_file : string -> unit
