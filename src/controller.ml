@@ -133,6 +133,7 @@ struct
     end
 
   let event_admin_create db view session user pass altemail level =
+    Model.need_admin session;
     match pass with
     | None ->
       let token = ModelImpl.user_create_nopw
@@ -151,6 +152,7 @@ struct
       view_admin db view session [SCreatedUser { user; level }]
 
   let event_admin_mass_update db view session tasks =
+    Model.need_admin session;
     let tokens = ModelImpl.user_task_run db session tasks
     and translate = function
       | TaskSetPassword { user } -> SUpdPassword user
