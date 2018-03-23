@@ -202,11 +202,15 @@ struct
     match get_forgot_pass1 cgi, get_forgot_pass2 cgi with
     | None, _ | _, None ->
       view_forgot_form db cgi ~user ~token false
-    | Some pass1, Some pass2 ->
-      match ModelImpl.session_from_token db ~user ~token with
-      | Some auth ->
-        event_admin_change_password_forgot db cgi token auth
-          (validate_pass pass1) (validate_pass pass2)
-      | None ->
-        view_login db cgi LoginFailed
+    | Some pass1, Some pass2 when pass1 = pass2 ->
+      begin match ModelImpl.session_from_token db ~user ~token with
+        | Some auth ->
+          event_admin_change_password_forgot db cgi token auth
+            (validate_pass pass1) (validate_pass pass2)
+        | None ->
+          view_login db cgi LoginFailed
+      end
+    | Some pass1, pass2 ->
+      view_forgot_form db cgi ~user ~token true
+
 end
