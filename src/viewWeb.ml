@@ -229,16 +229,16 @@ struct
     Template.from_file ~models:([
         ("user", Jg_types.Tstr user);
         ("alt_email", match ModelImpl.user_get_email db user with
-          | Some addr -> Jg_types.Tstr addr
-          | None -> Jg_types.Tnull)
+          | Address addr -> Jg_types.Tstr addr
+          | _ -> Jg_types.Tnull)
       ] @ format_messages msgs) "admin_user.html"
 
   let format_admin_admin db user msgs users =
     Template.from_file ~models:([
         ("user", Jg_types.Tstr user);
         ("alt_email", match ModelImpl.user_get_email db user with
-          | Some addr -> Jg_types.Tstr addr
-          | None -> Jg_types.Tnull)
+          | Address addr -> Jg_types.Tstr addr
+          | _ -> Jg_types.Tnull)
       ] @ format_messages msgs @ format_users users) "admin_admin.html"
 
   let format_admin db auth msgs =

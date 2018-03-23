@@ -200,6 +200,7 @@ module Make(E: Externals) = struct
       execute_select_at_most_one db sql_get_email [str user]
         (fun stmt -> get_stropt stmt 0)
     with
-    | Some result -> result
-    | None -> None
+    | Some (Some addr) -> Address addr
+    | Some None -> NoAddress
+    | None -> NoSuchUser
 end

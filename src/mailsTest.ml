@@ -44,17 +44,24 @@ let make_mail_test ~title fn =
 let test_token_nomail =
   "Test mail construction: forgot, no alt email" >:: fun ctx ->
     setup_test ctx;
-    M.send_token_email ~email:None ~user:"foo" ~token:"xyz";
+    M.send_token_email ~email:NoAddress ~user:"foo" ~token:"xyz";
     check_mails "foo@example.com" "Forgotten password"
       "forgot" "setpw://xyz"
 
 let test_token_mail =
-  "Test mail construction: forgot, no alt email" >:: fun ctx ->
+  "Test mail construction: forgot, alt email" >:: fun ctx ->
     setup_test ctx;
-    M.send_token_email ~email:(Some "user@example.net")
+    M.send_token_email ~email:(Address "user@example.net")
       ~user:"foo" ~token:"xyz";
     check_mails "user@example.net" "Forgotten password"
       "forgot" "setpw://xyz"
+
+let test_token_nouser =
+  "Test mail construction: no such user" >:: fun ctx ->
+    setup_test ctx;
+    M.send_token_email ~email:NoSuchUser
+      ~user:"foo" ~token:"xyz";
+    assert_equal 0 (List.length !MailMock.mails)
 
 let test_new_mail =
   "Test mail construction: new" >:: fun ctx ->

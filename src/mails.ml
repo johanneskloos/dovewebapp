@@ -16,10 +16,13 @@ module Make(Strat: Strategy) = struct
     Strat.send_mail email body
 
   let send_token_email ~email ~user ~token =
-    let email = match email with
-      | Some address -> address
-      | None -> user ^ "@" ^ Config.(get domain)
-    in format_and_send_mail "Forgotten password" "forgot.822" ~email ~token
+    try
+      let email = match email with
+        | Model.Address address -> address
+        | NoAddress -> user ^ "@" ^ Config.(get domain)
+        | NoSuchUser -> raise Exit
+      in format_and_send_mail "Forgotten password" "forgot.822" ~email ~token
+    with Exit -> ()
 
   let send_account_email ~email ~token =
     format_and_send_mail "Your new account" "new.822" ~email ~token

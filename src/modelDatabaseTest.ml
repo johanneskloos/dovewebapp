@@ -685,7 +685,7 @@ let test_user_get_email =
        and token_expires = None
        and level = Model.Admin in
        add_user db ~user ~pass ~token ~token_expires ~level ~email;
-       assert_equal ~pp_diff:Fmt.(vs @@ option string) email
+       assert_equal ~pp_diff:Fmt.(vs @@ Model.pp_email) (Address "x@y.tk")
          (M.user_get_email db user))
 
 let test_user_get_email_none =
@@ -698,14 +698,14 @@ let test_user_get_email_none =
        and token_expires = None
        and level = Model.Admin in
        add_user db ~user ~pass ~token ~token_expires ~level ~email;
-       assert_equal ~pp_diff:Fmt.(vs @@ option string) email
+       assert_equal ~pp_diff:Fmt.(vs @@ Model.pp_email) NoAddress
          (M.user_get_email db user))
 
 let test_user_get_email_no_such_user =
   make_database_test ~title:"user_get_email, no such user"
     (fun db ->
-       assert_equal ~pp_diff:Fmt.(vs @@ option string)
-         None (M.user_get_email db "foo"))
+       assert_equal ~pp_diff:Fmt.(vs @@ Model.pp_email)
+         NoSuchUser (M.user_get_email db "foo"))
 
 let tests =
   "ModelDatabase" >:::

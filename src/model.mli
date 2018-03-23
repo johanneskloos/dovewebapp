@@ -27,6 +27,8 @@ type task =
 [@@deriving show]
 
 type token_info = { user: string; token: string } [@@deriving show]
+type email = Address of string | NoAddress | NoSuchUser [@@deriving show]
+
 
 module type S = sig
   type db
@@ -58,6 +60,6 @@ module type S = sig
 
   val user_task_run : db -> authdata -> task list -> token_info list
 
-  val user_get_email : db -> string -> string option
+  val user_get_email : db -> string -> email
 end
 

@@ -164,5 +164,8 @@ let user_task_run db session tasks =
 
 
 let user_get_email db user =
-  try (StringMap.find user db.db_users).alternative_email
-  with Not_found -> None
+  match (StringMap.find user db.db_users).alternative_email
+  with
+  | Some addr -> Address addr
+  | None -> NoAddress
+  | exception Not_found -> NoSuchUser
