@@ -96,6 +96,7 @@ struct
 
   let event_admin_logout db view session =
     ModelImpl.session_logout db session;
+    view_close_session view;
     view_login db view NoMessage
 
   let event_admin_change_password db view session pass pass2 =
