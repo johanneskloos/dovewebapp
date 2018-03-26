@@ -9,7 +9,7 @@
                     model database modelDatabase 
                     template mails mailSendmail
                     view viewWeb viewCgi
-                    controller))))
+                    controller application))))
 
 (executable
   ((name tests)
@@ -23,8 +23,8 @@
 (alias ((name runtest) (action (run ./tests.exe))))
 
 (executable
-  ((name application)
+  ((name main)
    (public_name dovewebapp)
    (package dovewebapp)
    (libraries (doveapp netcgi2))
-   (modules application)))
+   (modules main)))
