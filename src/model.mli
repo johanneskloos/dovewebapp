@@ -8,7 +8,15 @@ type authdata = {
 } [@@deriving show]
 
 val need_same_user: authdata -> string -> unit
+(** [need_same_user auth user] does nothing if
+    [auth] and [user] refer to the same user, or
+    [auth] describes an admin session. Otherwise,
+    an [AuthorizationNeeded User] exception is raised. *)
 val need_admin: authdata -> unit
+(** [need_admin auth] does nothing if [auth] describes
+    an admin session. Otherwise, an
+    [AuthorizationNeeded Admin] exception is raised. *)
+
 type user_entry = {
   user_name : string;
   user_token : string option;
@@ -20,14 +28,18 @@ type user_entry = {
 type task =
   | TaskSetPassword of { user: string; pass: string }
   | TaskSetEMail of { user: string; mail: string option }
-  | TaskCreateToken of string
-  | TaskDeleteToken of string
+  | TaskCreateToken of string (** Give the user name *)
+  | TaskDeleteToken of string (** Give the user name *)
   | TaskSetAdmin of { user: string; level: level }
-  | TaskDelete of string
+  | TaskDelete of string (** Give the user name *)
 [@@deriving show]
 
 type token_info = { user: string; token: string } [@@deriving show]
-type email = Address of string | NoAddress | NoSuchUser [@@deriving show]
+type email =
+    Address of string (** User is known and has the given address. *)
+  | NoAddress (** User is known, but has no e-mail address. *)
+  | NoSuchUser (** User does not exist. *)
+[@@deriving show]
 
 
 module type S = sig

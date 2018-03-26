@@ -1,5 +1,6 @@
 (** Interface to doveadm. *)
 
+val password_encode : user:string -> pass:string -> (string, string) result
 (** Encode a password using "doveadm pw".
 
     This function takes a username and a password. In the normal
@@ -12,8 +13,8 @@
       characters are rejected.
     @param pass The password. Passwords containing line breaks or NUL
       characters are rejected. *)
-val password_encode : user:string -> pass:string -> (string, string) result
 
+val auth : user:string -> pass:string -> bool
 (** Try to authenticate a user using "doveadm auth test".
 
     This function takes a username and a password. It uses doveadm to
@@ -24,4 +25,4 @@ val password_encode : user:string -> pass:string -> (string, string) result
       characters are rejected.
     @param pass The password. Passwords containing line breaks or NUL
       characters are rejected. *)
-val auth : user:string -> pass:string -> bool
+
