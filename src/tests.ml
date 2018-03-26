@@ -10,6 +10,7 @@ let tests = "all tests" >::: [
     TemplateTest.tests;
     TokenTest.tests;
     ViewCgiTest.tests;
-    ViewWebTest.tests
+    ViewWebTest.tests;
+    ApplicationTest.tests
   ]
 let () = run_test_tt_main tests

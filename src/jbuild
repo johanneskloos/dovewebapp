@@ -19,7 +19,7 @@
      (stringMap mailMock modelMock viewMock webMock testTools
                 controllerTest databaseTest doveadmTest mailsTest
                 modelDatabaseTest modelTest templateTest tokenTest
-                viewCgiTest viewWebTest tests))))
+                viewCgiTest viewWebTest applicationTest tests))))
 (alias ((name runtest) (action (run ./tests.exe))))
 
 (executable
