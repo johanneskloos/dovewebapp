@@ -18,8 +18,8 @@ let check_mail address subject sort url (address_msg, message) =
   assert_equal ~printer:id ~msg:"Envelope address"
     address address_msg
 
-let check_mails address subject sort url =
-  match !MailMock.mails with
+let check_mails mailer address subject sort url =
+  match !mailer with
   | [(mail)] -> check_mail address subject sort url mail
   | _ -> assert_failure "Expected exactly one e-mail"
 
@@ -34,41 +34,44 @@ let setup_test ctx =
   write_template "forgot" dir;
   write_template "new" dir;
   Config.(set_command_line datadir dir);
-  Config.(set_command_line domain "example.com");
-  MailMock.mails := []
+  Config.(set_command_line domain "example.com")
 
 let make_mail_test ~title fn =
   title >:: fun ctx ->
-    setup_test ctx; fn ()
+    setup_test ctx; fn (MailMock.create ())
 
 let test_token_nomail =
   "Test mail construction: forgot, no alt email" >:: fun ctx ->
     setup_test ctx;
-    M.send_token_email ~email:NoAddress ~user:"foo" ~token:"xyz";
-    check_mails "foo@example.com" "Forgotten password"
+    let mailer = MailMock.create () in
+    M.send_token_email mailer ~email:NoAddress ~user:"foo" ~token:"xyz";
+    check_mails mailer "foo@example.com" "Forgotten password"
       "forgot" "setpw://xyz"
 
 let test_token_mail =
   "Test mail construction: forgot, alt email" >:: fun ctx ->
     setup_test ctx;
-    M.send_token_email ~email:(Address "user@example.net")
+    let mailer = MailMock.create () in
+    M.send_token_email mailer ~email:(Address "user@example.net")
       ~user:"foo" ~token:"xyz";
-    check_mails "user@example.net" "Forgotten password"
+    check_mails mailer "user@example.net" "Forgotten password"
       "forgot" "setpw://xyz"
 
 let test_token_nouser =
   "Test mail construction: no such user" >:: fun ctx ->
     setup_test ctx;
-    M.send_token_email ~email:NoSuchUser
+    let mailer = MailMock.create () in
+    M.send_token_email mailer ~email:NoSuchUser
       ~user:"foo" ~token:"xyz";
-    assert_equal 0 (List.length !MailMock.mails)
+    assert_equal 0 (List.length !mailer)
 
 let test_new_mail =
   "Test mail construction: new" >:: fun ctx ->
     setup_test ctx;
-    M.send_account_email ~email:"user@example.net"
+    let mailer = MailMock.create () in
+    M.send_account_email mailer ~email:"user@example.net"
       ~token:"xyz";
-    check_mails "user@example.net" "Your new account"
+    check_mails mailer "user@example.net" "Your new account"
       "new" "setpw://xyz"
 
 let tests =

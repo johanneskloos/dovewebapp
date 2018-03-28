@@ -48,3 +48,4 @@ let make_fake_cgi ?(path="/") ?(cookies=[]) query buf =
     (`Direct "")
     (Netchannels.input_string "")
     (fun _ _ _ -> `Automatic)
+

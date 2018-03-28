@@ -1,4 +1,6 @@
-let mails: (string * Netmime.complex_mime_message) list ref = ref []
+type t = (string * Netmime.complex_mime_message) list ref
 
-let send_mail rcpt body =
+let create () = ref []
+
+let send_mail mails rcpt body =
   mails := (rcpt, body) :: !mails

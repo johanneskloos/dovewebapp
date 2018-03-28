@@ -36,9 +36,11 @@ let pp_mail pp { rcpt; body } =
   Format.fprintf pp "%s -> %s" rcpt body
 
 module MailStore = struct
-  let mails = ref []
+  type t = mail list ref
 
-  let send_mail address mail =
+  let create () = ref []
+
+  let send_mail mails address mail =
     let buf = Buffer.create 1024 in
     Netmime_channels.write_mime_message
       (new Netchannels.output_buffer buf)
@@ -152,11 +154,11 @@ let run ctxt ?path ?(initdata=default_init_data) ?cookies query =
   write_file "admin_user.html" initdata.page_admin_user;
   write_file "admin_admin.html" initdata.page_admin_admin;
   write_file "forgot.html" initdata.page_forgot;
-  MailStore.mails := [];
   let buf = Buffer.create 4096 in
-  let cgi = TestTools.make_fake_cgi ?path ?cookies query buf in
-  A.handle_request cgi;
-  { mails = !MailStore.mails; page = Buffer.contents buf }
+  let cgi = TestTools.make_fake_cgi ?path ?cookies query buf
+  and mailer = MailMock.create () in
+  A.handle_request ~mailer cgi;
+  { mails = !mailer; page = Buffer.contents buf }
 
 let assert_page ?(status = 200) body result =
   let stream = Netchannels.input_string result in

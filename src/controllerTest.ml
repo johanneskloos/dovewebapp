@@ -103,7 +103,7 @@ let mk_model ?(users = []) ?(sessions = []) key =
   let model = ModelMock.{ db_users; db_sessions; key } in
   List.iter (fun (user, data) -> ModelMock.user_add user data model) users;
   List.iter (fun (sid, data) -> ModelMock.session_add sid data model) sessions;
-  model
+  C.{ mailer = MailMock.create(); db = model }
 
 let cmp_model
     ModelMock.{ db_users = users1; db_sessions = sessions1; key = key1 }
@@ -112,18 +112,19 @@ let cmp_model
   && StringMap.equal (=) sessions1 sessions2
   && key1 = key2
 
-let assert_no_mail = function
+let assert_no_mail ctrl =
+  match !C.(ctrl.mailer) with
   | [] -> ()
-  | l -> assert_failure
-           (Format.asprintf "Got %d unexpected mails to %a"
-              (List.length l)
-              Fmt.(list string) (List.map fst l))
+  | l ->
+    assert_failure
+      (Format.asprintf "Got %d unexpected mails to %a"
+         (List.length l)
+         Fmt.(list string) (List.map fst l))
 
 let test_event_login_login =
   "Test event_login with login" >:: fun ctx ->
     let open View in
     ModelMock.current_time := 200L;
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~login_operation:Login ~login_user:"bar"
@@ -135,52 +136,48 @@ let test_event_login_login =
           "#0",
           ModelMock.{ username = "bar";
                       expires = 500L}
-        ])
-      model;
+        ]).db
+      model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       (Some "#0") (view.session);
     let session = Model.{ auth_session = Some "#0";
                           auth_user = "bar"; auth_level = User } in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session; messages = [] }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model = model.db; session; messages = [] }] view.history;
+    assert_no_mail model
 
 let test_event_login_wrong_password =
   "Test event_login with login, wrong password" >:: fun ctx ->
     let open View in
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~login_operation:Login ~login_user:"bar"
         ~login_pass:"blubber" () in
-    MailMock.mails := [];
     C.event_login model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" (mk_model "") model;
+      ~msg:"Model" (mk_model "").db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = View.LoginFailed }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model = model.db; message = View.LoginFailed }] view.history;
+    assert_no_mail model
 
 
 let test_event_login_login_no_such_user =
   "Test event_login with login, unknown user" >:: fun ctx ->
     let open View in
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~login_operation:Login ~login_user:"nope"
         ~login_pass:"blubber" () in
-    MailMock.mails := [];
     C.event_login model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" (mk_model "") model;
+      ~msg:"Model" (mk_model "").db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = View.LoginFailed }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model = model.db; message = View.LoginFailed }] view.history;
+    assert_no_mail model
 
 
 let pp_complex_mime_message pp msg =
@@ -205,7 +202,8 @@ let assert_mail ?msg ~rcpt ~subject ~body (rcpt', ((header, _) as mail)) =
   assert_equal ~msg:(msg_prefix ^ "subject")
     ~pp_diff:(vs @@ Fmt.string) subject (header # field "Subject")
 
-let assert_one_mail ?msg ~rcpt ~subject ~body = function
+let assert_one_mail C.{ mailer } ?msg ~rcpt ~subject ~body () =
+  match !mailer with
   | [mail] -> assert_mail ?msg ~rcpt ~subject ~body mail
   | [] -> assert_failure "No message where one was expected"
   | l -> assert_failure
@@ -216,7 +214,6 @@ let test_event_login_forgot_ok =
     let dir = bracket_tmpdir ctx in
     Config.(set_command_line datadir) dir;
     ModelMock.current_time := 100L;
-    MailMock.mails := [];
     let cout = open_out "forgot.822" in
     output_string cout "{{token}}";
     close_out cout;
@@ -228,22 +225,21 @@ let test_event_login_forgot_ok =
       ~msg:"Model"
       (mk_model "" ~users:[
           "frob", { user_frob with token = Some ("frob:100", 600L) }
-        ])
-      model;
+        ]).db
+      model.db;
     assert_equal ~msg:"Session"
       ~pp_diff:(vs @@ Fmt.(option string)) None (view.session);
     assert_equal ~msg:"History"
       ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = TokenSent "frob" }] view.history;
-    assert_one_mail ~rcpt:"frob@example.net" ~subject:"Forgotten password"
-      ~body:"frob:100"  !MailMock.mails
+      V.[Login { model = model.db; message = TokenSent "frob" }] view.history;
+    assert_one_mail model ~rcpt:"frob@example.net" ~subject:"Forgotten password"
+      ~body:"frob:100" ()
 
 let test_event_login_forgot_no_email =
   "Test event_login with forgot, no registered e-mail" >:: fun ctx ->
     let dir = bracket_tmpdir ctx in
     Config.(set_command_line datadir) dir;
     ModelMock.current_time := 100L;
-    MailMock.mails := [];
     let cout = open_out "forgot.822" in
     output_string cout "{{token}}";
     close_out cout;
@@ -255,22 +251,21 @@ let test_event_login_forgot_no_email =
       ~msg:"Model"
       (mk_model "" ~users:[
           "bar", { user_bar with token = Some ("bar:100", 600L) }
-        ])
-      model;
+        ]).db
+      model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string)) None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = TokenSent "bar" }] view.history;
+      V.[Login { model = model.db; message = TokenSent "bar" }] view.history;
     assert_one_mail ~rcpt:("bar@" ^ Config.(get domain))
       ~subject:"Forgotten password"
-      ~body:"bar:100"  !MailMock.mails
+      ~body:"bar:100" model ()
 
 let test_event_login_forgot_no_user =
   "Test event_login with forgot, no such user" >:: fun ctx ->
     let dir = bracket_tmpdir ctx in
     Config.(set_command_line datadir) dir;
     ModelMock.current_time := 100L;
-    MailMock.mails := [];
-    let cout = open_out "forgot.822" in
+    let cout = open_out (Filename.concat dir "forgot.822") in
     output_string cout "{{token}}";
     close_out cout;
     let model = mk_model ""
@@ -279,12 +274,12 @@ let test_event_login_forgot_no_user =
     C.event_login model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
       ~msg:"Model"
-      (mk_model "")
-      model;
+      (mk_model "").db
+      model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string)) None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = TokenSent "argh" }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model = model.db; message = TokenSent "argh" }] view.history;
+    assert_no_mail model
 
 let tests_login =
   [test_event_login_login; test_event_login_wrong_password;
@@ -295,126 +290,118 @@ let tests_login =
 
 let test_event_admin_logout =
   "Test event_admin with logout" >:: fun ctx ->
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~admin_operation:Logout ~session:"foo1" () in
     C.event_admin model view;
     let logout_model = mk_model "" in
-    ModelMock.session_rem "foo1" logout_model;
+    ModelMock.session_rem "foo1" logout_model.db;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model logout_model;
+      ~msg:"Model" model.db logout_model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string)) None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = NoMessage }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model = model.db; message = NoMessage }] view.history;
+    assert_no_mail model
 
 let test_event_admin_set_password =
   "Test event_admin with set_password" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:SetPass ~session:"foo1" ()
         ~admin_chpass_pass1:"pw1" ~admin_chpass_pass2:"pw1" in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model
+      ~msg:"Model" model.db
       (mk_model
          ~users:["foo",
                  ModelMock.{ user_foo with password = Some "pw1" }]
-         "");
+         "").db;
     let messages = View.[SUpdPassword "foo"] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_set_password_mismatch =
   "Test event_admin with set_password" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:SetPass ~session:"foo1" ()
         ~admin_chpass_pass1:"pw1" ~admin_chpass_pass2:"pw2" in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model "");
+      ~msg:"Model" model.db (mk_model "").db;
     let messages = View.[FPasswordMismatch] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_set_email =
   "Test event_admin with set_email" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:SetMail ~session:"foo1" ()
         ~admin_chmail_mail:"a@b.nu" in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model
+      ~msg:"Model" model.db
       (mk_model
          ~users:["foo",
                  ModelMock.{ user_foo with alternative_email = Some "a@b.nu" }]
-         "");
+         "").db;
     let messages = View.[SUpdEMail { user = "foo"; mail = Some "a@b.nu"} ] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_set_email_empty =
   "Test event_admin with set_email" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:SetMail ~session:"foo1" () in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model
+      ~msg:"Model" model.db
       (mk_model
          ~users:["foo",
                  ModelMock.{ user_foo with alternative_email = None }]
-         "");
+         "").db;
     let messages = View.[SUpdEMail { user = "foo"; mail = None } ] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_delete =
   "Test event_admin with delete" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Delete ~session:"foo1" ()
         ~admin_delete_confirm:true in
     C.event_admin model view;
     let model' = mk_model "" in
-    ModelMock.user_rem "foo" model';
-    ModelMock.session_rem "foo1" model';
+    ModelMock.user_rem "foo" model'.db;
+    ModelMock.session_rem "foo1" model'.db;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model' model;
+      ~msg:"Model" model'.db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model = model; message = NoMessage }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model = model.db; message = NoMessage }] view.history;
+    assert_no_mail model
 
 let test_event_admin_delete_unconfirmed =
   "Test event_admin with delete, unconfirmed" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Delete ~session:"foo1" () in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model "");
+      ~msg:"Model" model.db (mk_model "").db;
     let messages = View.[FDeleteNotConfirmed "foo"] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_create_nopw_nomail =
   "Test event_admin with create, no password, no mail" >:: fun ctx ->
     ModelMock.current_time := 200L;
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Create ~session:"foo1"
@@ -429,20 +416,19 @@ let test_event_admin_create_nopw_nomail =
         admin = false
       } in
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model ~users:["xyz", user_data] "");
+      ~msg:"Model" model.db (mk_model ~users:["xyz", user_data] "").db;
     let messages =
       View.[SCreatedUserWithToken { user="xyz"; level = User; token }]
     in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_create_nopw_mail =
   "Test event_admin with create, no password, mail" >:: fun ctx ->
     let dir = bracket_tmpdir ctx in
     ModelMock.current_time := 200L;
     Config.(set_command_line datadir) dir;
-    MailMock.mails := [];
     let cout = open_out "new.822" in
     output_string cout "{{token}}";
     close_out cout;
@@ -461,19 +447,18 @@ let test_event_admin_create_nopw_mail =
         admin = true
       } in
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model ~users:["xyz", user_data] "");
+      ~msg:"Model" model.db (mk_model ~users:["xyz", user_data] "").db;
     let messages =
       View.[SCreatedUserSentToken { user="xyz"; level = Admin;
                                     mail = "u@v.dd" }]
     in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
     assert_one_mail ~rcpt:"u@v.dd" ~subject:"Your new account"
-      ~body:token !MailMock.mails
+      ~body:token model ()
 
 let test_event_admin_create_pw =
   "Test event_admin with create, password" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Create ~session:"foo1"
@@ -488,17 +473,16 @@ let test_event_admin_create_pw =
         admin = false
       } in
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model ~users:["xyz", user_data] "");
+      ~msg:"Model" model.db (mk_model ~users:["xyz", user_data] "").db;
     let messages =
       View.[SCreatedUser { user="xyz"; level = User }]
     in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
+    assert_no_mail model
 
 let test_event_admin_create_not_admin =
   "Test event_admin with create, not admin" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Create ~session:"baz"
@@ -510,7 +494,6 @@ let test_event_admin_create_not_admin =
 
 let test_event_admin_mass_update_not_admin =
   "Test event_admin with mass update, not admin" >:: fun ctx ->
-    MailMock.mails := [];
     let model= mk_model ""
     and view =
       V.make ~admin_operation:MassUpdate ~session:"baz"
@@ -522,7 +505,6 @@ let test_event_admin_mass_update_not_admin =
    is tested in the model and view anyway! *)
 let test_event_admin_mass_update =
   "Test event_admin with mass update" >:: fun ctx ->
-    MailMock.mails := [];
     ModelMock.current_time := 900L;
     let model= mk_model ""
     and view =
@@ -532,47 +514,44 @@ let test_event_admin_mass_update =
     C.event_admin model view;
     let user_data = { user_frob with token = Some ("frob:900", 1400L) } in
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" model (mk_model ~users:["frob", user_data] "");
+      ~msg:"Model" model.db (mk_model ~users:["frob", user_data] "").db;
     let messages =
       View.[SSentToken "frob"]
     in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; session=auth_foo_1; messages }] view.history;
+      V.[Admin { model=model.db; session=auth_foo_1; messages }] view.history;
     assert_one_mail ~rcpt:"frob@example.net" ~subject:"Forgotten password"
-      ~body:"frob:900"  !MailMock.mails
+      ~body:"frob:900" model ()
 
 let test_event_admin_no_session =
   "Test event_admin without session" >:: fun ctx ->
-    MailMock.mails := [];
     let model = mk_model ""
     and view = V.make ~admin_operation:MassUpdate ~session:"junk" () in
     C.event_admin model view;
     assert_equal ~cmp:cmp_model ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" (mk_model "") model;
+      ~msg:"Model" (mk_model "").db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       (Some "junk") (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Login { model; message = View.LoginFailed }] view.history;
-    assert_no_mail !MailMock.mails
+      V.[Login { model=model.db; message = View.LoginFailed }] view.history;
+    assert_no_mail model
 
 let test_event_forgot_nopw =
   "Test event_forgot without password" >:: fun ctx ->
-    MailMock.mails := [];
     let model = mk_model ""
     and view = V.make ~forgot_user:"foo" ~forgot_token:"5A3B2F9D" () in
     C.event_forgot model view;
     assert_equal ~cmp:cmp_model  ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" (mk_model "") model;
+      ~msg:"Model" (mk_model "").db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Forgot { model; user = "foo"; token = "5A3B2F9D"; badpw=false }]
+      V.[Forgot { model=model.db; user = "foo"; token = "5A3B2F9D"; badpw=false }]
       view.history;
-    assert_no_mail !MailMock.mails
+    assert_no_mail model
 
 let test_event_forgot_withpw =
   "Test event_forgot with passwords" >:: fun ctx ->
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~forgot_user:"foo" ~forgot_token:"5A3B2F9D"
@@ -581,33 +560,32 @@ let test_event_forgot_withpw =
     assert_equal ~cmp:cmp_model  ~pp_diff:(vs ModelMock.pp_database)
       ~msg:"Model"
       (mk_model
-         ~users:["foo", { user_foo with password = Some "pass" }] "")
-      model;
+         ~users:["foo", { user_foo with password = Some "pass" }] "").db
+      model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       None (view.session);
     let messages = View.[SUpdPassword "foo"] in
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Admin { model; messages;
+      V.[Admin { model=model.db; messages;
                  session={ auth_foo_1 with auth_session = None } }]
       view.history;
-    assert_no_mail !MailMock.mails
+    assert_no_mail model
 
 let test_event_forgot_withpw_mismatch =
   "Test event_forgot with passwords" >:: fun ctx ->
-    MailMock.mails := [];
     let model = mk_model ""
     and view =
       V.make ~forgot_user:"foo" ~forgot_token:"5A3B2F9D"
         ~forgot_pass1:"pass" ~forgot_pass2:"pass'" () in
     C.event_forgot model view;
     assert_equal ~cmp:cmp_model  ~pp_diff:(vs ModelMock.pp_database)
-      ~msg:"Model" (mk_model "") model;
+      ~msg:"Model" (mk_model "").db model.db;
     assert_equal ~pp_diff:(vs @@ Fmt.(option string))
       None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
-      V.[Forgot { model; user = "foo"; token = "5A3B2F9D"; badpw=true }]
+      V.[Forgot { model=model.db; user = "foo"; token = "5A3B2F9D"; badpw=true }]
       view.history;
-    assert_no_mail !MailMock.mails
+    assert_no_mail model
 
 let tests_admin =
   [test_event_admin_logout;
