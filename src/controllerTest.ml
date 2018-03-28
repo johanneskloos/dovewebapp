@@ -240,7 +240,7 @@ let test_event_login_forgot_no_email =
     let dir = bracket_tmpdir ctx in
     Config.(set_command_line datadir) dir;
     ModelMock.current_time := 100L;
-    let cout = open_out "forgot.822" in
+    let cout = open_out (Filename.concat dir "forgot.822") in
     output_string cout "{{token}}";
     close_out cout;
     let model = mk_model ""
@@ -429,7 +429,7 @@ let test_event_admin_create_nopw_mail =
     let dir = bracket_tmpdir ctx in
     ModelMock.current_time := 200L;
     Config.(set_command_line datadir) dir;
-    let cout = open_out "new.822" in
+    let cout = open_out (Filename.concat dir "new.822") in
     output_string cout "{{token}}";
     close_out cout;
     let model= mk_model ""
@@ -505,6 +505,11 @@ let test_event_admin_mass_update_not_admin =
    is tested in the model and view anyway! *)
 let test_event_admin_mass_update =
   "Test event_admin with mass update" >:: fun ctx ->
+    let dir = bracket_tmpdir ctx in
+    Config.(set_command_line datadir) dir;
+    let cout = open_out (Filename.concat dir "forgot.822") in
+    output_string cout "{{token}}";
+    close_out cout;
     ModelMock.current_time := 900L;
     let model= mk_model ""
     and view =
