@@ -1,4 +1,8 @@
-let send_mail address ((header, _) as message) =
+type t = unit
+
+let create () = ()
+
+let send_mail () address ((header, _) as message) =
   let open Netsmtp in
   header # update_field "To" address;
   let addr =
