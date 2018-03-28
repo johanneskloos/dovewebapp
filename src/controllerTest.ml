@@ -214,7 +214,7 @@ let test_event_login_forgot_ok =
     let dir = bracket_tmpdir ctx in
     Config.(set_command_line datadir) dir;
     ModelMock.current_time := 100L;
-    let cout = open_out "forgot.822" in
+    let cout = open_out (Filename.concat dir "forgot.822") in
     output_string cout "{{token}}";
     close_out cout;
     let model = mk_model ""
