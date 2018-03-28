@@ -26,8 +26,13 @@ exception ArgumentEmpty of string
 module Make(ModelImpl: Model.S)
     (ViewImpl: View.S with type model = ModelImpl.db)
     (MailImpl: Mails.Strategy): sig
-  val event_login : ViewImpl.model -> ViewImpl.view -> unit
-  val event_admin : ViewImpl.model -> ViewImpl.view -> unit
-  val event_forgot : ViewImpl.model -> ViewImpl.view -> unit
+  type controller = {
+    mailer: MailImpl.t;
+    db: ModelImpl.db
+  }
+
+  val event_login : controller -> ViewImpl.view -> unit
+  val event_admin : controller -> ViewImpl.view -> unit
+  val event_forgot : controller -> ViewImpl.view -> unit
 end
 
