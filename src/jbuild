@@ -23,6 +23,28 @@
 (alias ((name runtest) (action (run ./tests.exe))))
 
 (executable
+  ((name stringify)
+   (libraries (batteries))
+   (modules (stringify))))
+
+(rule ((targets ("data.ml"))
+       (action (run ./stringify.exe "-o" ${@}
+                    "-v" "schema" "userdb.sql"
+                    "-v" "mail_new" "testdata/new.822"
+                    "-v" "mail_forgot" "testdata/forgot.822"
+                    "-v" "page_login" "testdata/login.html"
+                    "-v" "page_forgot" "testdata/forgot.html"
+                    "-v" "page_admin_user" "testdata/admin_user.html"
+                    "-v" "page_admin_admin" "testdata/admin_admin.html"))
+       (deps ((file userdb.sql) (files_recursively_in testdata)))
+       (mode fallback)))
+
+(executable
+  ((name jingooTest)
+   (modules (jingooTest))
+   (libraries (yojson jingoo))))
+
+(executable
   ((name main)
    (public_name dovewebapp)
    (package dovewebapp)

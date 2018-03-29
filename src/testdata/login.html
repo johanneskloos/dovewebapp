@@ -1,0 +1,4 @@
+{% if (message is undefined) %}(undefined)
+{% elseif message.key == \"login_failed\" %}login_failed
+{% elseif message.key == \"token_sent\" %}token_sent:{{message.user}}
+{% else %}Weird message: {{message.key}}{% endif %}

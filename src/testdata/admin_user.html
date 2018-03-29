@@ -1,0 +1,32 @@
+user:{{user}}
+alt_email:{% if (alt_email is defined) %}{{alt_email}}{% else %}(None){% endif %}
+{% for msg in infos%}
+success:
+{% if msg.key == "upd_password" %}upd_password:{{msg.user}}
+{% elseif msg.key == "upd_email" %}upd_email:{{msg.user}}:
+{% if (msg.mail is defined) %}{{msg.mail}}{% else %}(none){% endif %}
+{% elseif msg.key == "set_user" %}set_user:{{msg.user}}
+{% elseif msg.key == "set_admin" %}set_admin:{{msg.user}}
+{% elseif msg.key == "token_sent" %}token_sent:{{msg.user}}
+{% elseif msg.key == "token_deleted" %}token_deleted:{{msg.user}}
+{% elseif msg.key == "created" %}created:{{msg.user}}:{{msg.level}}
+{% if (msg.mail is defined)  %}mailed={{msg.mail}}
+{% elseif (msg.token is defined) %}token={{msg.token}}
+{% else %}finished{%endif%}
+{% elseif msg.key == "user_deleted" %}user_deleted:{{msg.user}}
+{% else %}unknown:{{msg.key}}{%endif%}
+{%endfor%}
+{% for msg in errors%}
+failure:
+{% if msg.key == "err_db" %}err_db:{{msg.detail}}
+{% elseif msg.key == "err_ext" %}err_ext:{{msg.detail}}
+{% elseif msg.key == "err_delete_all_admin" %}err_delete_all_admin
+{% elseif msg.key == "err_delete_logged_in" %}err_delete_logged_in
+{% elseif msg.key == "err_delete_unconfirmed" %}
+err_delete_unconfirmed: {{msg.user}}
+{% elseif msg.key == "err_pw_mismatch" %}err_pw_mismatch
+{% elseif msg.key == "err_auth_user" %}err_auth_user
+{% elseif msg.key == "err_auth_admin" %}err_auth_admin
+{% else %}unknown:{{msg.key}}{%endif%}
+format_message_fail
+{%endfor%}
