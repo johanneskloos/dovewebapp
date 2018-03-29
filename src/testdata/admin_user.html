@@ -28,5 +28,4 @@ err_delete_unconfirmed: {{msg.user}}
 {% elseif msg.key == "err_auth_user" %}err_auth_user
 {% elseif msg.key == "err_auth_admin" %}err_auth_admin
 {% else %}unknown:{{msg.key}}{%endif%}
-format_message_fail
 {%endfor%}

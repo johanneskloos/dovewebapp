@@ -28,17 +28,16 @@ err_delete_unconfirmed: {{msg.user}}
 {% elseif msg.key == "err_auth_user" %}err_auth_user
 {% elseif msg.key == "err_auth_admin" %}err_auth_admin
 {% else %}unknown:{{msg.key}}{%endif%}
-format_message_fail
 {%endfor%}
 {% for user in users %}
 user:{{user.user}}:{{user.level}}:
 {% if (user.email is defined) %}
 {{user.email}}{%else%}(none){%endif%}:
 {% if (user.token is defined) %}
-{% if (user.token.token is defined) %}
-{{user.token.token}}@{{user.token.expires}}
-{% else %}{{user.token.message}}{% endif %}
+{% set token = user.token %}
+{% if (token.token is defined) %}
+{{token.token}}@{{token.expires}}
+{% else %}{{token.message}}{% endif %}
 {% else %}(no token){%endif%}
-format_user
 {%endfor%}
 
