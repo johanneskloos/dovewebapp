@@ -1,0 +1,33 @@
+{ user: "juliuscaesar",
+  alt_email: "jc@princeps.spqr",
+  infos: [
+    { key: "upd_password", user: "augustus" },
+    { key: "upd_email", user: "octavian", mail: "oct@senatus.sqpr" },
+    { key: "set_user", user: "brutus" },
+    { key: "set_admin", user: "nero" },
+    { key: "token_sent", user: "caracalla" },
+    { key: "token_deleted", user: "hadrian" },
+    { key: "created", user: "crassus", level: "user",
+      mail: "crassus@senatus.spqr" },
+    { key: "created", user: "antonius", level: "admin",
+      token: "ABC" },
+    { key: "created", user: "vespasian", level: "admin" },
+    { key: "user_deleted", user: "varus" }
+  ],
+  errors: [
+    { key: "err_db", detail: "huh?" },
+    { key: "err_ext", detail: "argh!" },
+    { key: "err_delete_all_admin" },
+    { key: "err_delete_logged_in" },
+    { key: "err_delete_unconfirmed", user: "constantine" },
+    { key: "err_pw_mismatch" },
+    { key: "err_auth_user" },
+    { key: "err_auth_admin" }
+  ],
+  users: [
+    { user: "catullus", level: "user" },
+    { user: "livius", email: "ovid@philosophia.sqpr",
+      token: { token: "XYZ", expires: 42 } },
+    { user: "ovid", token: { message: "metamorphosis" } }
+  ]
+}
