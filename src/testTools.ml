@@ -49,3 +49,29 @@ let make_fake_cgi ?(path="/") ?(cookies=[]) query buf =
     (Netchannels.input_string "")
     (fun _ _ _ -> `Automatic)
 
+let make_fake_templates ctxt =
+  let dir = OUnit2.bracket_tmpdir ctxt in
+  Config.(set_command_line datadir dir);
+  let write_file name content =
+    let chan = open_out name in
+    output_string chan content;
+    close_out chan
+  in
+  write_file "new.822" Data.mail_new;
+  write_file "forgot.822" Data.mail_forgot;
+  write_file "login.html" Data.page_login;
+  write_file "forgot.html" Data.page_login;
+  write_file "admin_user.html" Data.page_admin_user;
+  write_file "admin_admin.html" Data.page_admin_admin
+
+let make_fake_database ?setup ctxt =
+  let (file, chan) = OUnit2.bracket_tmpfile ctxt in
+  close_out chan;
+  Config.(set_command_line database file);
+  let db = Sqlite3.db_open file in
+  Database.expect_ok (Sqlite3.exec db Data.schema);
+  begin match setup with
+  | Some commands -> Database.expect_ok (Sqlite3.exec db commands)
+  | None -> ()
+  end;
+  ignore (Sqlite3.db_close db)

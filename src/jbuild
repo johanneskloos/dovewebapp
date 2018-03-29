@@ -16,7 +16,7 @@
    (libraries (doveapp oUnit fmt qcheck))
    (preprocess (pps (ppx_deriving.std)))
    (modules
-     (stringMap mailMock modelMock viewMock webMock testTools
+     (stringMap mailMock modelMock viewMock webMock testTools data
                 controllerTest databaseTest doveadmTest mailsTest
                 modelDatabaseTest modelTest templateTest tokenTest
                 viewCgiTest viewWebTest applicationTest tests))))

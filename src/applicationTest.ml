@@ -50,110 +50,19 @@ end
 
 module A = Application.Make(ExtImpl)(MailStore)
 
-type init = {
-  db_setup:string;
-  mail_forgot: string;
-  mail_new: string;
-  page_login: string;
-  page_admin_user: string;
-  page_admin_admin: string;
-  page_forgot: string
-}
-
-let format_message_success =
-  "success:" ^
-  "{% if msg.key == \"upd_password\" %}upd_password:{{msg.user}}" ^
-  "{% elseif msg.key == \"upd_email\" %}upd_email:{{msg.user}}:" ^
-  "{% if (msg.mail is defined) %}{{msg.mail}}{% else %}(none){% endif %}" ^
-  "{% elseif msg.key == \"set_user\" %}set_user:{{msg.user}}" ^
-  "{% elseif msg.key == \"set_admin\" %}set_admin:{{msg.user}}" ^
-  "{% elseif msg.key == \"token_sent\" %}token_sent:{{msg.user}}" ^
-  "{% elseif msg.key == \"token_deleted\" %}token_deleted:{{msg.user}}" ^
-  "{% elseif msg.key == \"created\" %}created:{{msg.user}}:{{msg.level}}" ^
-  "{% if (msg.mail is defined)  %}mailed={{msg.mail}}" ^
-  "{% elseif (msg.token is defined) %}token={{msg.token}}" ^
-  "{% else %}finished{%endif%}" ^
-  "{% elseif msg.key == \"user_deleted\" %}user_deleted:{{msg.user}}"^
-  "{% else %}unknown:{{msg.key}}{%endif%}"
-let format_message_fail =
-  "failure:" ^
-  "{% if msg.key == \"err_db\" %}err_db:{{msg.detail}}" ^
-  "{% elseif msg.key == \"err_ext\" %}err_ext:{{msg.detail}}" ^
-  "{% elseif msg.key == \"err_delete_all_admin\" %}err_delete_all_admin" ^
-  "{% elseif msg.key == \"err_delete_logged_in\" %}err_delete_logged_in" ^
-  "{% elseif msg.key == \"err_delete_unconfirmed\" %}" ^
-  "err_delete_unconfirmed: {{msg.user}}" ^
-  "{% elseif msg.key == \"err_pw_mismatch\" %}err_pw_mismatch" ^
-  "{% elseif msg.key == \"err_auth_user\" %}err_auth_user" ^
-  "{% elseif msg.key == \"err_auth_admin\" %}err_auth_admin" ^
-  "{% else %}unknown:{{msg.key}}{%endif%}"
-let format_messages =
-  "{% for msg in infos%}\n" ^ format_message_success ^ "\n{%endfor%}" (* ^
-  "{% for msg in errors%}\n" ^ format_message_fail ^ "\n{%endfor%}"*)
-let format_admin_user =
-  "user:{{user}}\n" ^
-  "alt_email:{% if (alt_email is defined) %}" ^
-  "{{alt_email}}{% else %}(None){% endif %}\n" ^
-  format_messages
-let format_user =
-  "user:{{user.user}}:{{user.level}}:" ^
-  "{% if user.email is defined %}" ^
-  "{{user.email}}{%else%}(none){%endif%}:" ^
-  "{% if user.token is defined %}" ^
-  "{{user.token}}@{{user.expires}}" ^
-  "{% elseif user.message is defined %}" ^
-  "{{user.message}}" ^
-  "{% else %}(no token){%endif%}\n"
-let format_admin_admin =
-  format_admin_user (*^
-  "{% for user in users %}\n" ^ format_user ^ "\n{%endfor%}"*)
 let db_setup =
-  "CREATE TABLE users (username VARCHAR(30) PRIMARY KEY," ^
-  "password VARCHAR(100), token CHAR(32), token_expires DATE, " ^
-  "alternative_email VARCHAR(100), admin TINYINT NOT NULL);" ^
-  "CREATE TABLE sessions (sessionid CHAR(32) PRIMARY KEY," ^
-  "session_expires DATE NOT NULL, username VARCHAR(30) NOT NULL);" ^
   "INSERT INTO users VALUES (\"root\", \"t00r\", NULL, NULL, NULL, 1);" ^
   "INSERT INTO users VALUES (\"reader\", NULL, \"xyz\", 100, NULL, 1);" ^
   "INSERT INTO sessions VALUES (\"sid1\", 100, \"root\")"
-
-let default_init_data = {
-  db_setup;
-  mail_forgot = "{{token}}";
-  mail_new = "{{token}}";
-  page_login =
-    "{% if (message is undefined) %}(undefined)" ^
-    "{% elseif message.key == \"login_failed\" %}login_failed" ^
-    "{% elseif message.key == \"token_sent\" %}token_sent:{{message.user}}" ^
-    "{% else %}Weird message: {{message.key}}{% endif %}";
-  page_admin_user = format_admin_user;
-  page_admin_admin = format_admin_admin;
-  page_forgot = "{{user}}:{{token}}:{{pw_mismatch}}"
-}
 
 type output = {
   mails: mail list;
   page: string
 }
 
-let run ctxt ?path ?(initdata=default_init_data) ?cookies query =
-  bracket_db_lock ctxt;
-  let dir = bracket_tmpdir ctxt in
-  Config.(set_command_line datadir) dir;
-  Config.(set_command_line database) (Filename.concat dir "users.db");
-  let db = Sqlite3.db_open Config.(get database) in
-  Database.expect_ok (Sqlite3.exec db initdata.db_setup);
-  ignore (Sqlite3.db_close db);
-  let write_file file content =
-    let chan = open_out (Filename.concat dir file) in
-    output_string chan content;
-    close_out chan in
-  write_file "forgot.822" initdata.mail_forgot;
-  write_file "new.822" initdata.mail_new;
-  write_file "login.html" initdata.page_login;
-  write_file "admin_user.html" initdata.page_admin_user;
-  write_file "admin_admin.html" initdata.page_admin_admin;
-  write_file "forgot.html" initdata.page_forgot;
+let run ctxt ?path ?cookies query =
+  TestTools.make_fake_templates ctxt;
+  TestTools.make_fake_database ~setup:db_setup ctxt;
   let buf = Buffer.create 4096 in
   let cgi = TestTools.make_fake_cgi ?path ?cookies query buf
   and mailer = MailMock.create () in
