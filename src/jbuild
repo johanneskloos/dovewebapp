@@ -13,7 +13,7 @@
 
 (executable
   ((name tests)
-   (libraries (doveapp oUnit fmt qcheck))
+   (libraries (doveapp oUnit fmt qcheck batteries))
    (preprocess (pps (ppx_deriving.std)))
    (modules
      (stringMap mailMock modelMock viewMock webMock testTools data

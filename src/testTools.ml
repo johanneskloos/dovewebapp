@@ -75,3 +75,12 @@ let make_fake_database ?setup ctxt =
   | None -> ()
   end;
   ignore (Sqlite3.db_close db)
+
+let compact s =
+  BatString.filter_map (function
+      | ' ' | '\t' | '\n' | '\r' -> None
+      | c -> Some c)
+    s
+
+let streq_whitespace s1 s2 =
+  compact s1 = compact s2
