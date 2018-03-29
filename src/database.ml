@@ -99,7 +99,12 @@ let str t = Sqlite3.Data.TEXT t
 let stropt = function
   | Some t -> str t
   | None -> Sqlite3.Data.NULL
+let int64 i = Sqlite3.Data.INT i
 let bool b = Sqlite3.Data.INT (if b then 1L else 0L)
+let int64opt = function
+  | Some i -> int64 i
+  | None -> Sqlite3.Data.NULL
+
 let type_string = function
   | Sqlite3.Data.NONE -> "(none)"
   | Sqlite3.Data.NULL -> "NULL"
