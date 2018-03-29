@@ -60,7 +60,7 @@ let make_fake_templates ctxt =
   write_file "new.822" Data.mail_new;
   write_file "forgot.822" Data.mail_forgot;
   write_file "login.html" Data.page_login;
-  write_file "forgot.html" Data.page_login;
+  write_file "forgot.html" Data.page_forgot;
   write_file "admin_user.html" Data.page_admin_user;
   write_file "admin_admin.html" Data.page_admin_admin
 
