@@ -81,7 +81,8 @@ let assert_page ?(status = 200) body result =
       "text/html" (header # field "Content-type");
     assert_equal ~pp_diff:(vs @@ Fmt.string)
       "no-cache" (header # field "Cache-control");
-    assert_equal ~pp_diff:(vs @@ Fmt.string)
+    assert_equal ~msg:"Page body" ~cmp:TestTools.streq_whitespace
+      ~pp_diff:(vs @@ Fmt.(using TestTools.compact string))
       body (body' # value)
   | _ -> assert false
 
@@ -104,7 +105,10 @@ let test_login_login =
            "root"
            (Database.get_str stmt 1));
     Application.drop_handle db;
-    assert_page "user:root\nalt_email:(None)\n" result.page
+    assert_page
+      ("\n\nuser:root\n" ^ "alt_email:(None)\n" ^
+      "user:root:admin::user:reader:admin::xyz@1970-01-01 00:01:39\n")
+      result.page
 
 let test_admin_set_pass =
   "admin page - set password" >:: fun ctx ->
@@ -124,7 +128,8 @@ let test_admin_set_pass =
            (Database.get_str stmt 0));
     Application.drop_handle db;
     assert_page
-      "user:root\nalt_email:(None)\n\nsuccess:upd_password:root\n"
+      ("user:root\nalt_email:(None)\n\nsuccess:upd_password:root\n" ^
+       " user:root:admin::user:reader:admin::xyz@1970-01-01 00:01:39")
       result.page
 
 let test_admin_set_pass_fail =
@@ -144,7 +149,10 @@ let test_admin_set_pass_fail =
            "t00r"
            (Database.get_str stmt 0));
     Application.drop_handle db;
-    assert_page "user:root\nalt_email:(None)\n" result.page
+    assert_page ("user:root\nalt_email:(None)\n" ^
+                 "failure:err_pw_mismatch " ^
+                 "user:root:admin::user:reader:admin::xyz@1970-01-01 00:01:39")
+      result.page
 
 let test_forgot_main =
   "forgot page - main" >:: fun ctx ->
