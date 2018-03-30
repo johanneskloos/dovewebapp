@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>Forgot password | Dovecot</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+  <body>
+    <header>
+      {% if pw_mismatch %}
+      <div><span class="error">The given passwords do not match!</span></div>
+      {% endif %}
+    </header>
+    <main>
+    <form action="{{url}}/dovewebapp/forgot" method="post" id="loginform">
+      <p>Reset password for user {{user}}.</p>
+      <input id="user" name="user" type="hidden" value="{{user}}"/>
+      <input id="token" name="token" type="hidden" value="{{token}}"/>
+      <label for="pass1">New password:</label><br/>
+      <input id="pass1" name="pass1" type="password"/><br>
+      <label for="pass2">New password (repeat):</label><br/>
+      <input id="pass2" name="pass2" type="password"/><br>
+      <button type="submit">Set new password</button>
+    </form>
+    </main>
+  </body>
+</html>

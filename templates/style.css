@@ -1,0 +1,39 @@
+.error {
+  background-color: #FF6666;
+  padding: 5px;
+}
+.info {
+  background-color: #66FF66;
+  padding: 5px;
+}
+form {
+  border-style: ridge;
+  border-color: gray;
+  margin: auto;
+  padding: 5px 5px 5px 5px;
+  width: 30em;
+}
+header > div {
+  width: 30em;
+  margin: auto;
+}
+.row {
+  width: 30em;
+  margin: auto;
+}
+input [type ~= "text email password"] {
+  width: 20em;
+  margin: 5px 0 5px 0;
+}
+input [type="checkbox"] {
+  width: 2em;
+  margin: 0;
+}
+label {
+}
+.wide {
+  width: 80%;
+}
+.sixth {
+  width: 40em;
+}

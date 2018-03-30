@@ -1,0 +1,92 @@
+<html>
+  <head>
+    <title>User administration - user - {{user}} | Dovecot</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+  <body>
+    <header>
+      {% for msg in infos%}
+      {% if msg.key == "upd_password" %}upd_password:{{msg.user}}
+      <div class="info">Updated password for {{msg.user}}</div>
+      {% elseif msg.key == "upd_email" %}upd_email:{{msg.user}}:
+      {% if (msg.mail is defined) %}
+      <div class="info">Updated alternative
+        e-mail address for {{msg.user}} to {{msg.mail}}</div>
+      {%else%}
+      <div class="info">Removed alternative e-mail address
+        for {{msg.user}}</div>
+      {%endif%}
+      {% elseif msg.key == "set_user" %}
+      <div class="info">Made {{msg.user}} a regular user.</div>
+      {% elseif msg.key == "set_admin" %}set_admin:{{msg.user}}
+      <div class="info">Made {{msg.user}} an administrator.</div>
+      {% elseif msg.key == "token_sent" %}token_sent:{{msg.user}}
+      <div class="info">Sent a password reset mail to {{msg.user}}.</div>
+      {% elseif msg.key == "token_deleted" %}token_deleted:{{msg.user}}
+      <div class="info">Deleted the password reset token for {{msg.user}}.</div>
+      {% elseif msg.key == "created" %}created:{{msg.user}}:{{msg.level}}
+      {% if (msg.mail is defined)  %}
+      <div class="info">Created user {{msg.user}} (access level {{msg.level}})
+        and sent a password change e-mail to {{msg.mail}}</div>
+      {% elseif (msg.token is defined) %}
+      <div class="info">Created user {{msg.user}} (access level {{msg.level}}).
+        The password reset token is {{msg.token}}.</div>
+      {% else %}
+      <div class="info">Created user {{msg.user}} (access level {{msg.level}}).
+        The initial password has been set already.</div>
+      {%endif%}
+      {% elseif msg.key == "user_deleted" %}
+      <div class="info">Deleted user {{msg.user}}.</div>
+      {% else %}
+      <div class="error">Weird message: {{msg.key}}.</div>
+      {%endif%}
+      {%endfor%}
+      {% for msg in errors%}
+      {% if msg.key == "err_db" %}
+      <div class="error">Database error: {{msg.detail}}.</div>
+      {% elseif msg.key == "err_ext" %}
+      <div class="error">Error calling an external helper: {{msg.detail}}</div>
+      {% elseif msg.key == "err_delete_all_admin" %}
+      <div class="error">Error: This would delete all administrative users!</div>
+      {% elseif msg.key == "err_delete_logged_in" %}err_delete_logged_in
+      <div class="error">Error: This would delete the logged-in user!</div>
+      {% elseif msg.key == "err_delete_unconfirmed" %}
+      <div class="error">Error: Need to confirm the deletion of user {{msg.user}}!</div>
+      {% elseif msg.key == "err_pw_mismatch" %}err_pw_mismatch
+      <div class="error">Error: The entered passwords do not match!</div>
+      {% elseif msg.key == "err_auth_user" %}err_auth_user
+      <div class="error">Error: Need user-level authorization!</div>
+      {% elseif msg.key == "err_auth_admin" %}err_auth_admin
+      <div class="error">Error: Need admin-level authorization!</div>
+      {% else %}
+      <div class="error">Weird message: {{msg.key}}</div>
+      {%endif%}
+      {%endfor%}
+    </header>
+    <main>
+    <div class="row">
+      <p>Change data for admin user {{user}}.</p>
+      <form action="{{url}}/dovewebapp/admin" method="post">
+        <label for="pass1">New password:</label><br/>
+        <input id="pass1" type="password" name="pass1"/><br/>
+        <label for="pass2">New password (repeat):</label><br/>
+        <input id="pass2" type="password" name="pass2"/><br/>
+        <button name="operation" value="set_pass" type="submit">Set password</button>
+      </form>
+      <form action="{{url}}/dovewebapp/admin" method="post">
+        <label for="mail">Alternative e-mail:</label><br/>
+        <input id="mail"
+               type="email"
+               name="mail"
+               value="{% if (alt_email is defined)%}{{alt_email}}{%endif%}"/><br/>
+        <button name="operation" value="set_mail" type="submit">Set alternative e-mail</button>
+      </form>
+      <form action="{{url}}/dovewebapp/admin" method="post">
+        <input type="checkbox" id="confirm" name="confirm" value="checked">
+        <label for="confirm">Really delete this user!</label><br/>
+        <button name="operation" value="delete" type="submit">Delete this user</button>
+      </form>
+    </div>
+    </main>
+  </body>
+</html>

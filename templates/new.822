@@ -1,9 +1,5 @@
-Dear user,
+Your new e-mail address with user name {{user}} has been created.
 
-Your account has been created. To set an initial password,
-please follow the this link:
+Please follow the following link to set your password:
 
-  https://mail.waitpermission.de/pwmanager?page=forgot&token={{token}}
-
-Best regards,
-your admin team.
+{{url}}/dovewebapp/forgot?token={{token}}&user={{user}}
