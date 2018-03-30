@@ -61,8 +61,7 @@ type output = {
 }
 
 let run ctxt ?path ?cookies query =
-  TestTools.make_fake_templates ctxt;
-  TestTools.make_fake_database ~setup:db_setup ctxt;
+  TestTools.set_up ~setup:db_setup ctxt;
   let buf = Buffer.create 4096 in
   let cgi = TestTools.make_fake_cgi ?path ?cookies query buf
   and mailer = MailMock.create () in

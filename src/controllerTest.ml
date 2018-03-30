@@ -211,7 +211,7 @@ let assert_one_mail C.{ mailer } ?msg ~rcpt ~subject ~body () =
 
 let test_event_login_forgot_ok =
   "Test event_login with forgot" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     ModelMock.current_time := 100L;
     let model = mk_model ""
     and view =
@@ -233,7 +233,7 @@ let test_event_login_forgot_ok =
 
 let test_event_login_forgot_no_email =
   "Test event_login with forgot, no registered e-mail" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     ModelMock.current_time := 100L;
     let model = mk_model ""
     and view =
@@ -254,7 +254,7 @@ let test_event_login_forgot_no_email =
 
 let test_event_login_forgot_no_user =
   "Test event_login with forgot, no such user" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     ModelMock.current_time := 100L;
     let model = mk_model ""
     and view =
@@ -414,7 +414,7 @@ let test_event_admin_create_nopw_nomail =
 
 let test_event_admin_create_nopw_mail =
   "Test event_admin with create, no password, mail" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     ModelMock.current_time := 200L;
     let model= mk_model ""
     and view =
@@ -489,7 +489,7 @@ let test_event_admin_mass_update_not_admin =
    is tested in the model and view anyway! *)
 let test_event_admin_mass_update =
   "Test event_admin with mass update" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     ModelMock.current_time := 900L;
     let model= mk_model ""
     and view =

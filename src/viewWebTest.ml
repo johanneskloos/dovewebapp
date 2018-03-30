@@ -299,7 +299,7 @@ let model =
 
 let test_view_login =
   "view_login" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     let view = make [] in
     V.view_login model view View.NoMessage;
     assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
@@ -308,7 +308,7 @@ let test_view_login =
 let test_view_login_token_sent =
   "view_login, token sent" >:: fun ctx ->
     let view = make [] in
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     V.view_login model view (View.TokenSent user);
     assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some ("token_sent:" ^ user)) view.page_body
@@ -316,7 +316,7 @@ let test_view_login_token_sent =
 let test_view_login_failed =
   "view_login, login failed" >:: fun ctx ->
     let view = make [] in
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     V.view_login model view View.LoginFailed;
     assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some ("login_failed")) view.page_body
@@ -369,7 +369,7 @@ let expected_view_admin_admin_all_messages =
 
 let test_view_admin_user_all_messages =
   "view_admin, user" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     let view = make [] in
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
@@ -397,7 +397,7 @@ let test_view_admin_user_all_messages =
 
 let test_view_admin_admin_all_messages =
   "view_admin, admin" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     let view = make [] in
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
@@ -428,7 +428,7 @@ let expected_view_forgot_form =
 
 let test_view_forgot_form =
   "view_forgot_form" >:: fun ctx ->
-    TestTools.make_fake_templates ctx;
+    TestTools.set_up ctx;
     let view = make [] in
     V.view_forgot_form model view ~user ~token:session_id false;
     assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
