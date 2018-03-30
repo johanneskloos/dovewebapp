@@ -1,76 +1,84 @@
-type config_lattice = Default | ConfigFile | CommandLine
-type 'a config_option = ('a * config_lattice) ref
+type configuration = {
+  lifetime_session: int;
+  lifetime_token: int;
+  mail_domain: string;
+  mail_host: string;
+  mail_port: int;
+  path_templates: string;
+  path_database: string;
+}
 
-let get ({ contents = (value, _) }: 'a config_option) = value
-let set_config_file (var: 'a config_option) value =
-  if snd !var <> CommandLine then
-    var := (value, ConfigFile)
-  else ()
-let set_command_line (var: 'a config_option) value =
-  var := (value, CommandLine)
-let init value: 'a config_option = ref (value, Default)
+exception NotConfigured
 
-let sessions_timeout = init 600 (* 10 minutes *)
-let token_lifetime = init 7200 (* 2 hours *)
-let domain =
+let current_config = ref None
+
+let get () = match !current_config with
+  | Some (cfg, _) -> cfg
+  | None -> raise NotConfigured
+
+let set_debug cfg = match !current_config with
+  | None | Some (_, true) -> current_config := Some (cfg, true)
+  | _ -> failwith "Setting debug configuration on production run"
+
+let get_local_domain () =
   try
     let cin = open_in "/etc/mailname" in
     let domain = input_line cin in
     close_in cin;
-    init domain
-  with _ -> init "example.com"
-let datadir = init "/usr/local/share/accountadmin"
-let database = init "users.sqlite"
-let default_config = init true
-let mailserver = init "localhost"
-let mailport = init 25
+    String.trim domain
+  with _ -> ""
 
-let config_args =
-  Arg.[
-    ("-s", Int (set_command_line sessions_timeout),
-     "session timeout (in seconds)");
-    ("-t", Int (set_command_line token_lifetime),
-     "token lifetime (in seconds)");
-    ("-m", String (set_command_line domain), "Sender domain for e-mails");
-    ("-M", String (set_command_line mailserver), "Mail server for SMTP");
-    ("-p", Int (set_command_line mailport), "Port for the SMTP server");
-    ("-D", String (set_command_line datadir), "Data directory");
-    ("-d", String (set_command_line database), "Path to user database");
-    ("-n", Unit (fun () -> set_command_line default_config false),
-     "Do not read default config file")
-  ]
+let parse_configuration fcfg zone =
+  if !current_config <> None then
+    failwith "Setting production configuration when already set up";
+  let ini = new Inifiles.inifile fcfg in
+  let cfg =
+    List.fold_left (fun cfg zone ->
+        List.fold_left (fun cfg attr ->
+            let value = ini # getval zone attr in
+            match zone with
+            | "lifetime_session" ->
+              { cfg with lifetime_session = int_of_string value }
+            | "lifetime_token" ->
+              { cfg with lifetime_token = int_of_string value }
+            | "mail_domain" ->
+              { cfg with mail_domain = value }
+            | "mail_host" ->
+              { cfg with mail_host = value }
+            | "mail_port" ->
+              { cfg with mail_port = int_of_string value }
+            | "path_templates" ->
+              { cfg with path_templates = value }
+            | "path_database" ->
+              { cfg with path_database = value }
+            | _ -> (* Just ignore *) cfg)
+          cfg (ini # attrs zone))
+      { lifetime_session = 10 * 60; (* 10 minutes *)
+        lifetime_token = 3 * 3600; (* 3 hours *)
+        mail_domain = get_local_domain ();
+        mail_host = "localhost";
+        mail_port = 25;
+        path_templates = "";
+        path_database = "" }
+      zone in
+  current_config := Some (cfg, false)
 
-let parse_config_file filename =
-  let lineno = ref 0
-  and cin = open_in filename in
-  try
-    while true do
-      let line = input_line cin in
-      incr lineno;
-      let line = try
-          let index = String.index line '#' in String.sub line 0 index
-        with Not_found -> line in
-      if line <> "" then
-        try
-          let index = String.index line '=' in
-          let rest = String.sub line (index + 1) (-1) in
-          match String.sub line 0 index with
-          | "session_timeout" ->
-            set_config_file sessions_timeout (int_of_string rest)
-          | "token_lifetime" ->
-            set_config_file token_lifetime (int_of_string rest)
-          | "domain" -> set_config_file domain rest
-          | "data_directory" -> set_config_file datadir rest
-          | "database" -> set_config_file database rest
-          | "mailserver" -> set_config_file mailserver rest
-          | "mailport" -> set_config_file mailport (int_of_string rest)
-          | key ->
-            Format.eprintf "%s(%d): Unknown key %s" filename !lineno key;
-            exit 1
-        with
-        | Not_found ->
-          Format.eprintf "%s(%d): Syntax error, no '='" filename !lineno;
-          exit 1
-    done
-  with
-  | End_of_file -> ()
+let param_cfg =
+  let open Cmdliner.Arg in
+  value & opt string "/etc/dovecot/webapp.conf" & info ["c"; "config"]
+    ~docv:"CFGFILE"
+    ~doc:"Path to the configuration file"
+let param_zone =
+  let open Cmdliner.Arg in
+  non_empty & pos_all string [] & info [] ~docv:"zones"
+    ~doc:"Configuration zones to use"
+
+let run parse_rest =
+  let open Cmdliner.Term in
+  let term =
+    parse_rest
+    $ (const parse_configuration
+       $ param_cfg
+       $ param_zone) in
+  eval (term, info "dovewebapp") |> exit
+

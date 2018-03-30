@@ -2,7 +2,8 @@
 
 (library
   ((name doveapp)
-   (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient))
+   (libraries (calendar cryptokit jingoo netcgi2 sqlite3 netclient
+                        cmdliner inifiles))
    (wrapped false)
    (preprocess (pps (ppx_deriving.std)))
    (modules (config time token doveadm

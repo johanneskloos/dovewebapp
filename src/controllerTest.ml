@@ -248,7 +248,7 @@ let test_event_login_forgot_no_email =
     assert_equal ~pp_diff:(vs @@ Fmt.(option string)) None (view.session);
     assert_equal ~pp_diff:(vs @@ Fmt.list V.pp_history_item)
       V.[Login { model = model.db; message = TokenSent "bar" }] view.history;
-    assert_one_mail ~rcpt:("bar@" ^ Config.(get domain))
+    assert_one_mail ~rcpt:("bar@" ^ Config.((get()).mail_domain))
       ~subject:"Forgotten password"
       ~body:"bar:100" model ()
 

@@ -11,7 +11,7 @@ module Make(Strat: Strategy) = struct
     ] in
     let body = Netsendmail.compose
         ~from_addr:("Account management",
-                    "no-reply@" ^ Config.(get domain))
+                    "no-reply@" ^ Config.((get()).mail_domain))
         ~to_addrs:[("", email)]
         ~subject
         (Template.from_file ~models template) in
@@ -21,7 +21,7 @@ module Make(Strat: Strategy) = struct
     try
       let email = match email with
         | Model.Address address -> address
-        | NoAddress -> user ^ "@" ^ Config.(get domain)
+        | NoAddress -> user ^ "@" ^ Config.((get()).mail_domain)
         | NoSuchUser -> raise Exit
       in format_and_send_mail mailer "Forgotten password" "forgot.822" ~email ~token
     with Exit -> ()

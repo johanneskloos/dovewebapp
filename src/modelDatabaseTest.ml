@@ -108,7 +108,7 @@ let test_session_login_success =
        assert_equal ~pp_diff:(vs @@ Fmt.int) 1 (count_sessions db);
        assert_bool "No sessoin for foo"
          (has_session db "foo" (Some "tok1")
-            (Some (Int64.of_int (Config.(get sessions_timeout))))))
+            (Some (Int64.of_int (Config.((get()).lifetime_session))))))
 
 let test_session_login_fail =
   make_database_test ~title:"session_login, bad case"
@@ -460,7 +460,7 @@ let test_user_create_token =
        assert_equal ~pp_diff:(vs @@ Fmt.string)
          "tok1" (M.user_create_token db user);
        assert_has_user db ~user ~pass ~email ~token:(Some "tok1") ~level
-         ~token_expires:(Some (Int64.of_int Config.(get token_lifetime))
+         ~token_expires:(Some (Int64.of_int Config.((get()).lifetime_token))
                         ))
 
 let test_user_create_token_expired =
@@ -476,7 +476,7 @@ let test_user_create_token_expired =
        assert_equal ~pp_diff:(vs @@ Fmt.string)
          "tok1" (M.user_create_token db user);
        assert_has_user db ~user ~pass ~email ~level ~token:(Some "tok1")
-         ~token_expires:(Some (Int64.of_int Config.(get token_lifetime))
+         ~token_expires:(Some (Int64.of_int Config.((get()).lifetime_token))
                         ))
 
 let test_user_create_token_reuse =
@@ -596,7 +596,7 @@ let test_user_create_nopw_admin =
        assert_equal ~pp_diff:(vs @@ Fmt.string) "tok1" token;
        assert_has_user db ~user ~pass:None ~token:(Some token)
          ~level ~email
-         ~token_expires:(Some (Int64.of_int Config.(get token_lifetime))
+         ~token_expires:(Some (Int64.of_int Config.((get()).lifetime_token))
                         ))
 
 let test_user_create_nopw_admin_dup =

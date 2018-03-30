@@ -26,7 +26,7 @@ let check_mails mailer address subject sort url =
 let test_token_nomail =
   "Test mail construction: forgot, no alt email" >:: fun ctx ->
     TestTools.make_fake_templates ctx;
-    TestTools.set_fake_example_domain ();
+    TestTools.set_fake_example_domain ctx;
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:NoAddress ~user:"foo" ~token:"xyz";
     check_mails mailer "foo@example.com" "Forgotten password"
@@ -35,7 +35,7 @@ let test_token_nomail =
 let test_token_mail =
   "Test mail construction: forgot, alt email" >:: fun ctx ->
     TestTools.make_fake_templates ctx;
-    TestTools.set_fake_example_domain ();
+    TestTools.set_fake_example_domain ctx;
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:(Address "user@example.net")
       ~user:"foo" ~token:"xyz";
@@ -45,7 +45,7 @@ let test_token_mail =
 let test_token_nouser =
   "Test mail construction: no such user" >:: fun ctx ->
     TestTools.make_fake_templates ctx;
-    TestTools.set_fake_example_domain ();
+    TestTools.set_fake_example_domain ctx;
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:NoSuchUser
       ~user:"foo" ~token:"xyz";
@@ -54,7 +54,7 @@ let test_token_nouser =
 let test_new_mail =
   "Test mail construction: new" >:: fun ctx ->
     TestTools.make_fake_templates ctx;
-    TestTools.set_fake_example_domain ();
+    TestTools.set_fake_example_domain ctx;
     let mailer = MailMock.create () in
     M.send_account_email mailer ~email:"user@example.net"
       ~token:"xyz";

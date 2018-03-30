@@ -49,11 +49,31 @@ let make_fake_cgi ?(path="/") ?(cookies=[]) query buf =
     (Netchannels.input_string "")
     (fun _ _ _ -> `Automatic)
 
+let did_set_up = ref false
+
+let set_up_configuration ctxt =
+  if not !did_set_up then begin
+    let open Config in
+    let templates = OUnit2.bracket_tmpdir ctxt in
+    let (database, chan) = OUnit2.bracket_tmpfile ctxt in
+    close_out chan;
+    set_debug {
+      lifetime_session = 600;
+      lifetime_token = 7200;
+      mail_domain = "example.com";
+      mail_host = "localhost";
+      mail_port = 25;
+      path_templates = templates;
+      path_database = database
+    };
+    did_set_up := true
+  end
+ 
 let make_fake_templates ctxt =
-  let dir = OUnit2.bracket_tmpdir ctxt in
-  Config.(set_command_line datadir dir);
+  set_up_configuration ctxt;
   let write_file name content =
-    let chan = open_out name in
+    let chan = open_out
+        (Filename.concat Config.((get()).path_templates) name) in
     output_string chan content;
     close_out chan
   in
@@ -65,10 +85,8 @@ let make_fake_templates ctxt =
   write_file "admin_admin.html" Data.page_admin_admin
 
 let make_fake_database ?setup ctxt =
-  let (file, chan) = OUnit2.bracket_tmpfile ctxt in
-  close_out chan;
-  Config.(set_command_line database file);
-  let db = Sqlite3.db_open file in
+  set_up_configuration ctxt;
+  let db = Sqlite3.db_open Config.((get()).path_database) in
   Database.expect_ok (Sqlite3.exec db Data.schema);
   begin match setup with
   | Some commands -> Database.expect_ok (Sqlite3.exec db commands)
@@ -85,5 +103,5 @@ let compact s =
 let streq_whitespace s1 s2 =
   compact s1 = compact s2
 
-let set_fake_example_domain () =
-  Config.(set_command_line domain "example.com")
+let set_fake_example_domain ctxt =
+  set_up_configuration ctxt

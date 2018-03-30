@@ -1,5 +1,5 @@
 let take_handle () =
-  Database.connect Config.(get database)
+  Database.connect Config.((get()).path_database)
 
 let drop_handle handle =
   ignore (Sqlite3.db_close handle.Database.handle)

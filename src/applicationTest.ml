@@ -99,7 +99,7 @@ let test_login_login =
       []
       (fun stmt ->
          assert_equal ~pp_diff:(vs @@ Fmt.int64)
-           (Int64.of_int Config.(get sessions_timeout))
+           (Int64.of_int Config.((get()).lifetime_session))
            (Database.get_int64 stmt 0);
          assert_equal ~pp_diff:(vs @@ Fmt.string)
            "root"
