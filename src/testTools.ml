@@ -84,3 +84,6 @@ let compact s =
 
 let streq_whitespace s1 s2 =
   compact s1 = compact s2
+
+let set_fake_example_domain () =
+  Config.(set_command_line domain "example.com")

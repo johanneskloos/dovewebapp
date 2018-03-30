@@ -196,7 +196,7 @@ let assert_mail ?msg ~rcpt ~subject ~body (rcpt', ((header, _) as mail)) =
     (new Netchannels.output_buffer buf) mail;
   let body' = Buffer.contents buf in
   assert_equal ~msg:(msg_prefix ^ "body")
-    ~pp_diff:(vs @@ Fmt.string) body body';
+    ~pp_diff:(vs @@ Fmt.string) (String.trim body) (String.trim body');
   assert_equal ~msg:(msg_prefix ^ "rcpt")
     ~pp_diff:(vs @@ Fmt.string) rcpt rcpt';
   assert_equal ~msg:(msg_prefix ^ "subject")
@@ -211,12 +211,8 @@ let assert_one_mail C.{ mailer } ?msg ~rcpt ~subject ~body () =
 
 let test_event_login_forgot_ok =
   "Test event_login with forgot" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir) dir;
+    TestTools.make_fake_templates ctx;
     ModelMock.current_time := 100L;
-    let cout = open_out (Filename.concat dir "forgot.822") in
-    output_string cout "{{token}}";
-    close_out cout;
     let model = mk_model ""
     and view =
       V.make ~login_operation:Forgot ~login_user:"frob" () in
@@ -237,12 +233,8 @@ let test_event_login_forgot_ok =
 
 let test_event_login_forgot_no_email =
   "Test event_login with forgot, no registered e-mail" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir) dir;
+    TestTools.make_fake_templates ctx;
     ModelMock.current_time := 100L;
-    let cout = open_out (Filename.concat dir "forgot.822") in
-    output_string cout "{{token}}";
-    close_out cout;
     let model = mk_model ""
     and view =
       V.make ~login_operation:Forgot ~login_user:"bar" () in
@@ -262,12 +254,8 @@ let test_event_login_forgot_no_email =
 
 let test_event_login_forgot_no_user =
   "Test event_login with forgot, no such user" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir) dir;
+    TestTools.make_fake_templates ctx;
     ModelMock.current_time := 100L;
-    let cout = open_out (Filename.concat dir "forgot.822") in
-    output_string cout "{{token}}";
-    close_out cout;
     let model = mk_model ""
     and view =
       V.make ~login_operation:Forgot ~login_user:"argh" () in
@@ -426,12 +414,8 @@ let test_event_admin_create_nopw_nomail =
 
 let test_event_admin_create_nopw_mail =
   "Test event_admin with create, no password, mail" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
+    TestTools.make_fake_templates ctx;
     ModelMock.current_time := 200L;
-    Config.(set_command_line datadir) dir;
-    let cout = open_out (Filename.concat dir "new.822") in
-    output_string cout "{{token}}";
-    close_out cout;
     let model= mk_model ""
     and view =
       V.make ~admin_operation:Create ~session:"foo1"
@@ -505,11 +489,7 @@ let test_event_admin_mass_update_not_admin =
    is tested in the model and view anyway! *)
 let test_event_admin_mass_update =
   "Test event_admin with mass update" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir) dir;
-    let cout = open_out (Filename.concat dir "forgot.822") in
-    output_string cout "{{token}}";
-    close_out cout;
+    TestTools.make_fake_templates ctx;
     ModelMock.current_time := 900L;
     let model= mk_model ""
     and view =

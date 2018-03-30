@@ -9,8 +9,8 @@ let check_mail address subject sort url (address_msg, message) =
   let channel = new Netchannels.output_buffer buf in
   Netmime_channels.write_mime_message ~wr_header:false channel message;
   assert_equal ~printer:id ~msg:"Message bodies"
-    ("HEAD " ^ sort ^ "\r\n" ^ url ^ "\r\nTAIL\r\n")
-    (Buffer.contents buf);
+    url
+    (Buffer.contents buf |> String.trim);
   assert_equal ~printer:Fmt.(to_to_string (list string)) ~msg:"Addresses"
     [" <" ^ address ^ ">"] ((fst message) # multiple_field "to");
   assert_equal ~printer:id ~msg:"Subjects" subject
@@ -23,43 +23,29 @@ let check_mails mailer address subject sort url =
   | [(mail)] -> check_mail address subject sort url mail
   | _ -> assert_failure "Expected exactly one e-mail"
 
-let write_template sort dir =
-  let chan = open_out (Filename.concat dir (sort ^ ".822")) in
-  Format.fprintf (Format.formatter_of_out_channel chan)
-    "HEAD %s\nsetpw://{{ token }}\nTAIL@." sort;
-  close_out chan
-
-let setup_test ctx =
-  let dir = bracket_tmpdir ctx in
-  write_template "forgot" dir;
-  write_template "new" dir;
-  Config.(set_command_line datadir dir);
-  Config.(set_command_line domain "example.com")
-
-let make_mail_test ~title fn =
-  title >:: fun ctx ->
-    setup_test ctx; fn (MailMock.create ())
-
 let test_token_nomail =
   "Test mail construction: forgot, no alt email" >:: fun ctx ->
-    setup_test ctx;
+    TestTools.make_fake_templates ctx;
+    TestTools.set_fake_example_domain ();
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:NoAddress ~user:"foo" ~token:"xyz";
     check_mails mailer "foo@example.com" "Forgotten password"
-      "forgot" "setpw://xyz"
+      "forgot" "xyz"
 
 let test_token_mail =
   "Test mail construction: forgot, alt email" >:: fun ctx ->
-    setup_test ctx;
+    TestTools.make_fake_templates ctx;
+    TestTools.set_fake_example_domain ();
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:(Address "user@example.net")
       ~user:"foo" ~token:"xyz";
     check_mails mailer "user@example.net" "Forgotten password"
-      "forgot" "setpw://xyz"
+      "forgot" "xyz"
 
 let test_token_nouser =
   "Test mail construction: no such user" >:: fun ctx ->
-    setup_test ctx;
+    TestTools.make_fake_templates ctx;
+    TestTools.set_fake_example_domain ();
     let mailer = MailMock.create () in
     M.send_token_email mailer ~email:NoSuchUser
       ~user:"foo" ~token:"xyz";
@@ -67,12 +53,13 @@ let test_token_nouser =
 
 let test_new_mail =
   "Test mail construction: new" >:: fun ctx ->
-    setup_test ctx;
+    TestTools.make_fake_templates ctx;
+    TestTools.set_fake_example_domain ();
     let mailer = MailMock.create () in
     M.send_account_email mailer ~email:"user@example.net"
       ~token:"xyz";
     check_mails mailer "user@example.net" "Your new account"
-      "new" "setpw://xyz"
+      "new" "xyz"
 
 let tests =
   "Mails" >::: [test_token_nomail; test_token_mail; test_new_mail]
