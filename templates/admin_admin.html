@@ -6,9 +6,9 @@
   <body>
     <header>
       {% for msg in infos%}
-      {% if msg.key == "upd_password" %}upd_password:{{msg.user}}
+      {% if msg.key == "upd_password" %}
       <div class="info">Updated password for {{msg.user}}</div>
-      {% elseif msg.key == "upd_email" %}upd_email:{{msg.user}}:
+      {% elseif msg.key == "upd_email" %}
       {% if (msg.mail is defined) %}
       <div class="info">Updated alternative
         e-mail address for {{msg.user}} to {{msg.mail}}</div>
@@ -18,13 +18,13 @@
       {%endif%}
       {% elseif msg.key == "set_user" %}
       <div class="info">Made {{msg.user}} a regular user.</div>
-      {% elseif msg.key == "set_admin" %}set_admin:{{msg.user}}
+      {% elseif msg.key == "set_admin" %}
       <div class="info">Made {{msg.user}} an administrator.</div>
-      {% elseif msg.key == "token_sent" %}token_sent:{{msg.user}}
+      {% elseif msg.key == "token_sent" %}
       <div class="info">Sent a password reset mail to {{msg.user}}.</div>
-      {% elseif msg.key == "token_deleted" %}token_deleted:{{msg.user}}
+      {% elseif msg.key == "token_deleted" %}
       <div class="info">Deleted the password reset token for {{msg.user}}.</div>
-      {% elseif msg.key == "created" %}created:{{msg.user}}:{{msg.level}}
+      {% elseif msg.key == "created" %}
       {% if (msg.mail is defined)  %}
       <div class="info">Created user {{msg.user}} (access level {{msg.level}})
         and sent a password change e-mail to {{msg.mail}}</div>
@@ -48,15 +48,15 @@
       <div class="error">Error calling an external helper: {{msg.detail}}</div>
       {% elseif msg.key == "err_delete_all_admin" %}
       <div class="error">Error: This would delete all administrative users!</div>
-      {% elseif msg.key == "err_delete_logged_in" %}err_delete_logged_in
+      {% elseif msg.key == "err_delete_logged_in" %}
       <div class="error">Error: This would delete the logged-in user!</div>
       {% elseif msg.key == "err_delete_unconfirmed" %}
       <div class="error">Error: Need to confirm the deletion of user {{msg.user}}!</div>
-      {% elseif msg.key == "err_pw_mismatch" %}err_pw_mismatch
+      {% elseif msg.key == "err_pw_mismatch" %}
       <div class="error">Error: The entered passwords do not match!</div>
-      {% elseif msg.key == "err_auth_user" %}err_auth_user
+      {% elseif msg.key == "err_auth_user" %}
       <div class="error">Error: Need user-level authorization!</div>
-      {% elseif msg.key == "err_auth_admin" %}err_auth_admin
+      {% elseif msg.key == "err_auth_admin" %}
       <div class="error">Error: Need admin-level authorization!</div>
       {% else %}
       <div class="error">Weird message: {{msg.key}}</div>
@@ -82,7 +82,11 @@
         <button name="operation" value="set_mail" type="submit">Set alternative e-mail</button>
       </form>
       <form action="{{url}}/dovewebapp/admin" method="post">
-        <input type="checkbox" id="confirm" name="confirm" value="checked">
+        {%if user.level == "admin"%}
+        <input type="checkbox" id="confirm" name="confirm" checked>
+        {%else%}
+        <input type="checkbox" id="confirm" name="confirm">
+        {%endif%}
         <label for="confirm">Really delete this user!</label><br/>
         <button name="operation" value="delete" type="submit">Delete this user</button>
       </form>
@@ -100,7 +104,7 @@
         <input id="pass" name="pass" type="password"/><br>
         <label for="mail">Alternative e-mail address:</label><br/>
         <input id="mail" type="email" name="mail"/><br/>
-        <input id="admin" type="checkbox" name="admin" value="checked">
+        <input id="admin" type="checkbox" name="admin">
         <label for="admin">Give administrative privileges</label><br/>
         <button name="operation" value="create" type="submit">Create user</button>
       </form>
@@ -128,14 +132,23 @@
                 {{user.user}}
               </td>
               <td>
+                {% if (user.level == "admin") %}
                 <input type="hidden"
                        name="olevel:{{user.user}}"
                        id="olevel:{{user.user}}"
-                       value="{%if user.level == \"admin\"%}checked{%endif%}"/>
+                       value="checked"/>
                 <input type="checkbox"
                        name="nlevel:{{user.user}}"
                        id="nlevel:{{user.user}}"
-                       value="{%if user.level == \"admin\"%}checked{%endif%}"/>
+                       checked/>
+                {%else%}
+                <input type="hidden"
+                       name="olevel:{{user.user}}"
+                       id="olevel:{{user.user}}"/>
+                <input type="checkbox"
+                       name="nlevel:{{user.user}}"
+                       id="nlevel:{{user.user}}"/>
+                {%endif%}
                 Admin
               </td>
               <td>
@@ -164,10 +177,11 @@
                 <input type="checkbox" id="rmtok:{{user.user}}"
                                        name="rmtok:{{user.user}}"/>
                 <label for="rmtok:{{user.user}}">Delete token</label>
-                {%else}
+                {%else%}
                 <input type="checkbox" id="mktok:{{user.user}}"
                                        name="mktok:{{user.user}}"/>
                 <label for="mktok:{{user.user}}">Create token</label>
+                {%endif%}
               </td>
               <td>
                 <input type="checkbox" id="delete:{{user.user}}"
