@@ -27,7 +27,7 @@
   users: [
     { user: "catullus", level: "user" },
     { user: "livius", email: "ovid@philosophia.sqpr",
-      token: { token: "XYZ", expires: 42 } },
-    { user: "ovid", token: { message: "metamorphosis" } }
+      token: { token: "XYZ", expires: 42 }, level: "admin" },
+    { user: "ovid", token: { message: "metamorphosis" }, level: "user" }
   ]
 }
