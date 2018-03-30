@@ -11,6 +11,14 @@ let make ?session params =
     (List.fold_left (fun params (k,v) -> SM.add k v params)
        SM.empty params)
 
+let pp_opt_compact =
+  vs @@ Fmt.(option (using compact string))
+let stropteq_whitespace s1 s2 =
+  match s1, s2 with
+  | Some s1, Some s2 -> streq_whitespace s1 s2
+  | None, None -> true
+  | _, _ -> false
+
 let user = "foo"
 let pass = "bar"
 let pass2 = "bar2"
@@ -146,9 +154,9 @@ let test_get_admin_chpass_pass2 =
 
 let test_get_admin_chmail_mail =
   "get_chmail_mail" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some mail)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some mail)
       (V.get_admin_chmail_mail request_admin_set_mail_set);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_admin_chmail_mail request_admin_set_mail_unset)
 
 let test_get_admin_delete_confirm =
@@ -168,19 +176,19 @@ let test_get_admin_create_user =
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some pass)
       (V.get_admin_create_pass
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_admin_create_pass
          request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_mail =
   "get_create_mail" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some mail)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some mail)
       (V.get_admin_create_mail
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_admin_create_mail
          request_admin_create_without_pass_mail_user)
 
@@ -195,25 +203,25 @@ let test_get_admin_create_level =
 
 let test_get_admin_create_pass =
   "get_create_pass" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some pass)
       (V.get_admin_create_pass
          request_admin_create_with_pass_mail_admin);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_admin_create_pass
          request_admin_create_without_pass_mail_user)
 
 let test_get_admin_create_pass1 =
   "get_create_pass1" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some pass)
       (V.get_forgot_pass1 request_forgot_pass);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_forgot_pass1 request_forgot_no_pass)
 
 let test_get_admin_create_pass2 =
   "get_create_pass2" >:: fun ctx ->
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"with" (Some pass2)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"with" (Some pass2)
       (V.get_forgot_pass2 request_forgot_pass);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) ~msg:"without" None
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact ~msg:"without" None
       (V.get_forgot_pass2 request_forgot_no_pass)
 
 let test_get_forgot_user =
@@ -261,18 +269,18 @@ let test_get_admin_mass_update =
 let test_view_open_session =
   "view_open_session" >:: fun ctx ->
     let view = make [] in
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.session;
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact None view.session;
     V.view_open_session view session_id;
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some session_id) view.session
 
 let test_view_close_session =
   "view_close_session" >:: fun ctx ->
     let view = make ~session:session_id [] in
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some session_id) view.session;
     V.view_close_session view;
-    assert_equal ~pp_diff:Fmt.(vs @@ option string) None view.session
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact None view.session
 
 let user_data =
   ModelMock.{ password = Some pass; token = None;
@@ -289,71 +297,80 @@ let model =
               key = ""
             }
 
-let login_template =
-  "{% if (message is undefined) %}nothing" ^
-  "{% elseif message.key == \"login_failed\" %}login_failed" ^
-  "{% else %}forgot:{{message.user}}{% endif %}"
 let test_view_login =
   "view_login" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
+    TestTools.make_fake_templates ctx;
     let view = make [] in
-    let chan = open_out (Filename.concat dir "login.html") in
-    output_string chan login_template;
-    close_out chan;
     V.view_login model view View.NoMessage;
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
-      (Some "nothing") view.page_body
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
+      (Some "(undefined)") view.page_body
 
 let test_view_login_token_sent =
   "view_login, token sent" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
     let view = make [] in
-    let chan = open_out (Filename.concat dir "login.html") in
-    output_string chan login_template;
-    close_out chan;
+    TestTools.make_fake_templates ctx;
     V.view_login model view (View.TokenSent user);
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
-      (Some ("forgot:" ^ user)) view.page_body
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
+      (Some ("token_sent:" ^ user)) view.page_body
 
 let test_view_login_failed =
   "view_login, login failed" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
     let view = make [] in
-    let chan = open_out (Filename.concat dir "login.html") in
-    output_string chan login_template;
-    close_out chan;
+    TestTools.make_fake_templates ctx;
     V.view_login model view View.LoginFailed;
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some ("login_failed")) view.page_body
 
-let admin_user_template =
-  "user={{user}};email={% if alt_email is undefined%}(none)" ^
-  "{%else%}{{alt_email}}{% endif %};" ^
-  "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
-  "{%for msg in errors%}error:{{msg.key}};{%endfor%}" 
-let admin_admin_template =
-  "user={{user}};email={% if alt_email is undefined%}(none)" ^
-  "{%else%}{{alt_email}}{% endif %};" ^
-  "{%for msg in infos%}info:{{msg.key}};{%endfor%}" ^
-  "{%for msg in errors%}error:{{msg.key}};{%endfor%}" ^
-  "{%for user in users%}user:{{user.user}};{%endfor%}"
-
 let expected_view_admin_user_all_messages =
-  "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;"
+  "user:foo" ^
+  "alt_email:foo@example.net" ^
+  "success:user_deleted:foo" ^
+  "success:created:foo:falsetoken=sid1" ^
+  "success:created:foo:truemailed=foo@example.net" ^
+  "success:created:foo:falsefinished" ^
+  "success:token_deleted:foo" ^
+  "success:token_sent:foo" ^
+  "success:set_admin:foo" ^
+  "success:set_user:foo" ^
+  "success:upd_email:foo:(none)" ^
+  "success:upd_email:foo:foo@example.net" ^
+  "success:upd_password:foo" ^
+  "failure:err_auth_admin" ^
+  "failure:err_auth_user" ^
+  "failure:err_pw_mismatch" ^
+  "failure:err_delete_unconfirmed:foo" ^
+  "failure:err_delete_logged_in" ^
+  "failure:err_delete_all_admin" ^
+  "failure:err_ext:exterr" ^
+  "failure:err_db:dberr"
 let expected_view_admin_admin_all_messages =
-  "user=foo;email=foo@example.net;info:user_deleted;info:created;info:created;info:created;info:token_deleted;info:token_sent;info:set_admin;info:set_user;info:upd_email;info:upd_email;info:upd_password;error:err_auth_admin;error:err_auth_user;error:err_pw_mismatch;error:err_delete_unconfirmed;error:err_delete_logged_in;error:err_delete_all_admin;error:err_ext;error:err_db;user:bar;user:foo;"
+  "user:fooalt_email:foo@example.net" ^
+  "success:user_deleted:foo" ^
+  "success:created:foo:falsetoken=sid1" ^
+  "success:created:foo:truemailed=foo@example.net" ^
+  "success:created:foo:falsefinished" ^
+  "success:token_deleted:foo" ^
+  "success:token_sent:foo" ^
+  "success:set_admin:foo" ^
+  "success:set_user:foo" ^
+  "success:upd_email:foo:(none)" ^
+  "success:upd_email:foo:foo@example.net" ^
+  "success:upd_password:foo" ^
+  "failure:err_auth_admin" ^
+  "failure:err_auth_user" ^
+  "failure:err_pw_mismatch" ^
+  "failure:err_delete_unconfirmed:foo" ^
+  "failure:err_delete_logged_in" ^
+  "failure:err_delete_all_admin" ^
+  "failure:err_ext:exterr" ^
+  "failure:err_db:dberr" ^
+  "user:bar:user::sid1@1970-01-0100:00:00" ^
+  "user:foo:admin:foo@example.net:"
 
 let test_view_admin_user_all_messages =
   "view_admin, user" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
+    TestTools.make_fake_templates ctx;
     let view = make [] in
-    let chan = open_out (Filename.concat dir "admin_user.html") in
-    output_string chan admin_user_template;
-    close_out chan;
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
         auth_level = User }
@@ -375,17 +392,13 @@ let test_view_admin_user_all_messages =
        FPasswordMismatch;
        FAuth Model.User;
        FAuth Model.Admin];
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some expected_view_admin_user_all_messages) view.page_body
 
 let test_view_admin_admin_all_messages =
   "view_admin, admin" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
+    TestTools.make_fake_templates ctx;
     let view = make [] in
-    let chan = open_out (Filename.concat dir "admin_admin.html") in
-    output_string chan admin_admin_template;
-    close_out chan;
     V.view_admin model view
       { auth_session = Some session_id; auth_user = user;
         auth_level = Admin }
@@ -407,24 +420,18 @@ let test_view_admin_admin_all_messages =
        FPasswordMismatch;
        FAuth Model.User;
        FAuth Model.Admin];
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some expected_view_admin_admin_all_messages) view.page_body
 
-let forgot_template =
-  "user={{user}};token={{token}};pw_mismatch={{pw_mismatch}}"
 let expected_view_forgot_form =
-  "user=" ^ user ^ ";token=" ^ session_id ^ ";pw_mismatch=false"
+  BatString.join ":" [user; session_id; "false"]
 
 let test_view_forgot_form =
   "view_forgot_form" >:: fun ctx ->
-    let dir = bracket_tmpdir ctx in
-    Config.(set_command_line datadir dir);
+    TestTools.make_fake_templates ctx;
     let view = make [] in
-    let chan = open_out (Filename.concat dir "forgot.html") in
-    output_string chan forgot_template;
-    close_out chan;
     V.view_forgot_form model view ~user ~token:session_id false;
-    assert_equal ~pp_diff:Fmt.(vs @@ option string)
+    assert_equal ~cmp:stropteq_whitespace ~pp_diff:pp_opt_compact
       (Some expected_view_forgot_form) view.page_body
 
 let tests =
