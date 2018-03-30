@@ -11,6 +11,8 @@ type configuration = {
   (** The host name of the mail server to send notification e-mails. *)
   mail_port: int;
   (** The TCP port of the mail server to send notification e-mails. *)
+  mail_url: string;
+  (** The base URL for the web interface. *)
   path_templates: string;
   (** The directory containing program data. *)
   path_database: string;

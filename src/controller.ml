@@ -143,10 +143,10 @@ struct
       let token = ModelImpl.user_create_nopw
           ctrl.db session ~user ~altemail ~level
       in begin match altemail with
-        | Some mail ->
-          Mail.send_account_email ctrl.mailer mail token;
+        | Some email ->
+          Mail.send_account_email ctrl.mailer ~email ~user ~token;
           view_admin ctrl.db view session
-            [SCreatedUserSentToken { user; mail; level }]
+            [SCreatedUserSentToken { user; mail=email; level }]
         | None ->
           view_admin ctrl.db view session
             [SCreatedUserWithToken { user; token; level }]

@@ -53,7 +53,7 @@ let test_new_mail =
     TestTools.set_up ctx;
     let mailer = MailMock.create () in
     M.send_account_email mailer ~email:"user@example.net"
-      ~token:"xyz";
+      ~token:"xyz" ~user:"user";
     check_mails mailer "user@example.net" "Your new account"
       "new" "xyz"
 

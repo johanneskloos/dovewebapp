@@ -4,6 +4,7 @@ type configuration = {
   mail_domain: string;
   mail_host: string;
   mail_port: int;
+  mail_url: string;
   path_templates: string;
   path_database: string;
 }
@@ -47,6 +48,8 @@ let parse_configuration fcfg zone =
               { cfg with mail_host = value }
             | "mail_port" ->
               { cfg with mail_port = int_of_string value }
+            | "mail_url" ->
+              { cfg with mail_url = value }
             | "path_templates" ->
               { cfg with path_templates = value }
             | "path_database" ->
@@ -59,7 +62,8 @@ let parse_configuration fcfg zone =
         mail_host = "localhost";
         mail_port = 25;
         path_templates = "";
-        path_database = "" }
+        path_database = "";
+        mail_url = "" }
       zone in
   current_config := Some (cfg, false)
 

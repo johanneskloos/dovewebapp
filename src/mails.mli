@@ -24,7 +24,8 @@ sig
       if [email] is [NoAddress], the local address of the user
       is inferred from [user] and [Config.domain]. *)
 
-  val send_account_email : Strat.t -> email:string -> token:string -> unit
+  val send_account_email : Strat.t -> email:string -> user:string ->
+    token:string -> unit
   (** Send an e-mail to [email] containing a link to the forgotten password
       page, using token [token]. *)
 

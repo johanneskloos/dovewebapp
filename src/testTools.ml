@@ -60,6 +60,7 @@ let set_up ?setup ctxt =
     mail_domain = "example.com";
     mail_host = "localhost";
     mail_port = 25;
+    mail_url = "setpw://";
     path_templates = templates;
     path_database = database
   };

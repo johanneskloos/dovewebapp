@@ -5,9 +5,12 @@ module type Strategy = sig
 end
 
 module Make(Strat: Strategy) = struct
-  let format_and_send_mail mailer subject template ~email ~token =
+  let format_and_send_mail mailer subject template
+      ~email ~user ~token =
     let models = [
-      ("token", Jg_types.Tstr token)
+      ("token", Jg_types.Tstr token);
+      ("user", Jg_types.Tstr user);
+      ("url", Jg_types.Tstr Config.((get()).mail_url))
     ] in
     let body = Netsendmail.compose
         ~from_addr:("Account management",
@@ -23,11 +26,13 @@ module Make(Strat: Strategy) = struct
         | Model.Address address -> address
         | NoAddress -> user ^ "@" ^ Config.((get()).mail_domain)
         | NoSuchUser -> raise Exit
-      in format_and_send_mail mailer "Forgotten password" "forgot.822" ~email ~token
+      in format_and_send_mail mailer "Forgotten password" "forgot.822"
+        ~email ~user ~token
     with Exit -> ()
 
-  let send_account_email mailer ~email ~token =
-    format_and_send_mail mailer "Your new account" "new.822" ~email ~token
+  let send_account_email mailer ~email ~user ~token =
+    format_and_send_mail mailer "Your new account" "new.822"
+      ~email ~user ~token
 
   let create = Strat.create
 end
