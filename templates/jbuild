@@ -1,0 +1,8 @@
+(jbuild_version 1)
+
+(install
+  ((section share)
+   (files (new.822 forgot.822
+                   login.html forgot.html
+                   admin_user.html admin_admin.html))
+   (package dovewebapp)))
