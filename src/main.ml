@@ -13,18 +13,10 @@ let run_fcgi () =
   Netcgi_fcgi.run (fun cgi ->
       App.handle_request (cgi :> Netcgi.cgi))
 
-let usage_msg =
-  "dovewebapp [-F] [-s session timeout] [-t token timeout] " ^
-  "[-m maildomain]\n" ^
-  "           [-D datadir] [-d database] [-n] config files...\n"
+let run b () = if b then run_fcgi () else run_cgi ()
 
-let () =
-  let fcgi = ref false in
-  Arg.parse
-    (("-F", Arg.Set fcgi, "run under FastCGI") ::
-     Config.config_args)
-    Config.parse_config_file usage_msg;
-  if Config.(get default_config) then
-    Config.parse_config_file "/etc/dovewebapp.conf";
-  if !fcgi then run_fcgi () else run_cgi ()
+let param_run =
+  let open Cmdliner.Arg in
+  value & flag & info ~doc:"Run under FastCGI" ["F"; "fastcgi"]
 
+let () = Config.run Cmdliner.Term.(const run $ param_run)
