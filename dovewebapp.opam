@@ -15,10 +15,14 @@ build-test: [
 	["jbuilder" "runtest" "-p" name "-j" jobs]
 ]
 depends: [
-	"jbuilder"	{build & >= "1.0+beta18"}
+	"jbuilder"	   {build & >= "1.0+beta18"}
+        "batteries"        {build}
+        "ppx_deriving.std"
 	"calendar"
 	"cryptokit"
 	"jingoo"
 	"ocamlnet"
 	"sqlite3"
+        "cmdliner"
+        "inifiles"
 ]
