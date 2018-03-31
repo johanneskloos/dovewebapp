@@ -84,5 +84,8 @@ let run parse_rest =
     $ (const parse_configuration
        $ param_cfg
        $ param_zone) in
-  eval (term, info "dovewebapp") |> exit
+  eval (term, info "dovewebapp") |>
+  function
+  | `Error _ -> exit 1
+  | _ -> exit 0
 
